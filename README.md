@@ -39,3 +39,4 @@ The program was written by myself, with help from the following:
  - npedotnet (https://github.com/npedotnet/NPESDK_GWT) licensed under MIT license
  - riversun (https://github.com/riversun/bigdoc) licensed under MIT license
  - Sporst (https://github.com/sporst/JHexView, https://github.com/sporst/splib) licensed under GPL 2.0
+ - bulenkov (https://github.com/bulenkov/Darcula)
