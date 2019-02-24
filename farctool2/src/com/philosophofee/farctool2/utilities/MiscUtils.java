@@ -18,6 +18,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
@@ -448,5 +449,42 @@ public static long getLong(byte[] bytes) {
          }
      }
  }
+  
+ public static void readLBP2SDF(File SDF) throws IOException
+    {
+        int seek = 0;
+        byte[] buffer = null;
+        try (RandomAccessFile fileAccess = new RandomAccessFile(SDF, "rw")) {
+            for (int i = 0; fileAccess.length() > (i * 4); i++)
+            {
+                buffer = new byte[4];
+                fileAccess.read(buffer);
+
+                seek += 4;
+                
+                fileAccess.seek(seek - 4);
+                fileAccess.write(reverseArray(buffer, 0, 4));
+            }
+            fileAccess.close();
+        } catch (IOException e) {}
+        System.out.println("Finished!");
+    }
+ 
+ public static byte[] reverseArray(byte arr[], int start, int end)
+{
+    int len = end - start;
+    if(len <= 0) return null;
+
+    int len2 = len >> 1;
+    int temp;
+
+    for (int i = 0; i < len2; ++i)
+    {
+        temp = arr[start + i];
+        arr[start + i] = arr[end - i - 1];
+        arr[end - i - 1] = (byte) temp;
+    }
+    return arr;
+}
 
 }

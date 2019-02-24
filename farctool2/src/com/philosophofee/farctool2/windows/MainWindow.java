@@ -88,6 +88,7 @@ public class MainWindow extends javax.swing.JFrame {
 
     public MainWindow() {
         initComponents();
+        fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
         PreviewLabel.setVisible(false);
         TextPrevScroll.setVisible(false);
         TextPreview.setVisible(false);
@@ -319,6 +320,8 @@ public class MainWindow extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
+        ConsolePopup = new javax.swing.JPopupMenu();
+        Clear = new javax.swing.JMenuItem();
         jSplitPane1 = new javax.swing.JSplitPane();
         MapPanel = new javax.swing.JScrollPane();
         mapTree = new javax.swing.JTree();
@@ -366,6 +369,7 @@ public class MainWindow extends javax.swing.JFrame {
         jMenu7 = new javax.swing.JMenu();
         MAPtoRLST = new javax.swing.JMenuItem();
         PrintDependenciesButton = new javax.swing.JMenuItem();
+        jMenuItem3 = new javax.swing.JMenuItem();
         jMenu3 = new javax.swing.JMenu();
         InstallMod = new javax.swing.JMenuItem();
         PackagePLAN = new javax.swing.JMenuItem();
@@ -374,7 +378,6 @@ public class MainWindow extends javax.swing.JFrame {
         DEV = new javax.swing.JMenu();
         DEV.setVisible(false);
         jMenuItem1 = new javax.swing.JMenuItem();
-        jMenuItem3 = new javax.swing.JMenuItem();
 
         javax.swing.GroupLayout jFrame1Layout = new javax.swing.GroupLayout(jFrame1.getContentPane());
         jFrame1.getContentPane().setLayout(jFrame1Layout);
@@ -459,6 +462,14 @@ public class MainWindow extends javax.swing.JFrame {
                     .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
         );
 
+        Clear.setText("Clear");
+        Clear.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ClearActionPerformed(evt);
+            }
+        });
+        ConsolePopup.add(Clear);
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("farctool2");
         addWindowListener(new java.awt.event.WindowAdapter() {
@@ -482,6 +493,11 @@ public class MainWindow extends javax.swing.JFrame {
         OutputTextArea.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
         OutputTextArea.setLineWrap(true);
         OutputTextArea.setRows(5);
+        OutputTextArea.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                OutputTextAreaMouseReleased(evt);
+            }
+        });
         jScrollPane2.setViewportView(OutputTextArea);
 
         javax.swing.GroupLayout pnlOutputLayout = new javax.swing.GroupLayout(pnlOutput);
@@ -489,7 +505,7 @@ public class MainWindow extends javax.swing.JFrame {
         pnlOutputLayout.setHorizontalGroup(
             pnlOutputLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(mapLoadingBar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 820, Short.MAX_VALUE)
+            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 747, Short.MAX_VALUE)
         );
         pnlOutputLayout.setVerticalGroup(
             pnlOutputLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -510,7 +526,7 @@ public class MainWindow extends javax.swing.JFrame {
         PreviewPanel.setLayout(PreviewPanelLayout);
         PreviewPanelLayout.setHorizontalGroup(
             PreviewPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(hexViewer, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(hexViewer, javax.swing.GroupLayout.DEFAULT_SIZE, 483, Short.MAX_VALUE)
         );
         PreviewPanelLayout.setVerticalGroup(
             PreviewPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -521,7 +537,7 @@ public class MainWindow extends javax.swing.JFrame {
 
         PreviewLabel.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
         PreviewLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        PreviewLabel.setAlignmentX(0.5f);
+        PreviewLabel.setAlignmentX(0.5F);
 
         TextPreview.setColumns(20);
         TextPreview.setFont(new java.awt.Font("Arial", 0, 10)); // NOI18N
@@ -553,7 +569,7 @@ public class MainWindow extends javax.swing.JFrame {
         ToolsPanel.setLayout(ToolsPanelLayout);
         ToolsPanelLayout.setHorizontalGroup(
             ToolsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jSplitPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 818, Short.MAX_VALUE)
+            .addComponent(jSplitPane3)
         );
         ToolsPanelLayout.setVerticalGroup(
             ToolsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -563,50 +579,30 @@ public class MainWindow extends javax.swing.JFrame {
         jSplitPane2.setTopComponent(ToolsPanel);
 
         EditorPanel.setModel(new javax.swing.table.DefaultTableModel(
-            new Object[][] {
-                {
-                    "Filename",
-                    null,
-                    null
-                }, {
-                    "Time Created",
-                    null,
-                    null
-                }, {
-                    "Size",
-                    null,
-                    null
-                }, {
-                    "Hash",
-                    null,
-                    null
-                }, {
-                    "GUID",
-                    null,
-                    null
-                }
+            new Object [][] {
+                {"Filename", null, null},
+                {"Time Created", null, null},
+                {"Size", null, null},
+                {"Hash", null, null},
+                {"GUID", null, null}
             },
-            new String[] {
-                "Variable",
-                "Value",
-                "Value (HEX)"
+            new String [] {
+                "Variable", "Value", "Value (HEX)"
             }
         ) {
-            Class[] types = new Class[] {
+            Class[] types = new Class [] {
                 java.lang.Object.class, java.lang.String.class, java.lang.String.class
             };
-            boolean[] canEdit = new boolean[] {
-                false,
-                true,
-                false
+            boolean[] canEdit = new boolean [] {
+                false, true, false
             };
 
             public Class getColumnClass(int columnIndex) {
-                return types[columnIndex];
+                return types [columnIndex];
             }
 
             public boolean isCellEditable(int rowIndex, int columnIndex) {
-                return canEdit[columnIndex];
+                return canEdit [columnIndex];
             }
         });
         jScrollPane1.setViewportView(EditorPanel);
@@ -792,6 +788,14 @@ public class MainWindow extends javax.swing.JFrame {
         });
         jMenu7.add(PrintDependenciesButton);
 
+        jMenuItem3.setText("Reverse Bytes...");
+        jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem3ActionPerformed(evt);
+            }
+        });
+        jMenu7.add(jMenuItem3);
+
         jMenuBar1.add(jMenu7);
 
         jMenu3.setText("Mods");
@@ -837,14 +841,6 @@ public class MainWindow extends javax.swing.JFrame {
         });
         DEV.add(jMenuItem1);
 
-        jMenuItem3.setText("Byte to Int");
-        jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem3ActionPerformed(evt);
-            }
-        });
-        DEV.add(jMenuItem3);
-
         jMenuBar1.add(DEV);
 
         setJMenuBar(jMenuBar1);
@@ -861,7 +857,7 @@ public class MainWindow extends javax.swing.JFrame {
         );
 
         pack();
-    } // </editor-fold>//GEN-END:initComponents
+    }// </editor-fold>//GEN-END:initComponents
 
 
     private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
@@ -952,14 +948,13 @@ public class MainWindow extends javax.swing.JFrame {
         File outputFile;
         String outputFileName;
 
+        fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
         if (currSHA1.length == 1) {
             outputFileName = currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1);
             outputFile = new File(outputFileName);
             fileChooser.setSelectedFile(outputFile);
         } else {
-            fileChooser.setCurrentDirectory(new java.io.File("."));
             fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            fileChooser.setAcceptAllFileFilterUsed(false);
 
         }
 
@@ -1008,14 +1003,13 @@ public class MainWindow extends javax.swing.JFrame {
         File outputFile;
         String outputFileName;
 
+        fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
         if (currSHA1.length == 1) {
             outputFileName = currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1) + ".png";
             outputFile = new File(outputFileName);
             fileChooser.setSelectedFile(outputFile);
         } else {
-            fileChooser.setCurrentDirectory(new java.io.File("."));
             fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            fileChooser.setAcceptAllFileFilterUsed(false);
 
         }
 
@@ -1072,14 +1066,13 @@ public class MainWindow extends javax.swing.JFrame {
         File outputFile;
         String outputFileName;
 
+        fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
         if (currSHA1.length == 1) {
             outputFileName = currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1) + ".dds";
             outputFile = new File(outputFileName);
             fileChooser.setSelectedFile(outputFile);
         } else {
-            fileChooser.setCurrentDirectory(new java.io.File("."));
             fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            fileChooser.setAcceptAllFileFilterUsed(false);
 
         }
 
@@ -1137,14 +1130,13 @@ public class MainWindow extends javax.swing.JFrame {
         File outputFile;
         String outputFileName;
 
+        fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
         if (currSHA1.length == 1) {
             outputFileName = currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1) + ".jpg";
             outputFile = new File(outputFileName);
             fileChooser.setSelectedFile(outputFile);
         } else {
-            fileChooser.setCurrentDirectory(new java.io.File("."));
             fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            fileChooser.setAcceptAllFileFilterUsed(false);
 
         }
 
@@ -1198,6 +1190,8 @@ public class MainWindow extends javax.swing.JFrame {
         if (bigBoy == null) {
             showUserDialog("Warning", "Please keep in mind, opening a .FARC file alone will not display anything within farctool2. A .MAP file is required for most functions.");
         }
+        fileChooser.setFileFilter(null);
+        fileChooser.setAcceptAllFileFilterUsed(false);
         FileFilter ff = new FileFilter() {
             @Override
             public boolean accept(File f) {
@@ -1215,13 +1209,15 @@ public class MainWindow extends javax.swing.JFrame {
                 return "FARC Files";
             }
         };
-        fileChooser.removeChoosableFileFilter(fileChooser.getAcceptAllFileFilter());
+        fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
         fileChooser.setFileFilter(ff);
+        fileChooser.setAcceptAllFileFilterUsed(true);
         int returnVal = fileChooser.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             bigBoyFarc = fileChooser.getSelectedFile();
             System.out.println("Sucessfully opened " + bigBoyFarc.getName());
         }
+        fileChooser.removeChoosableFileFilter(ff);
     }//GEN-LAST:event_OpenFarcActionPerformed
 
     private void OpenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenActionPerformed
@@ -1229,6 +1225,7 @@ public class MainWindow extends javax.swing.JFrame {
             "Map parsing takes time.\n" +
             "I might freeze, I have not crashed.\n" +
             "Wait, please bear with me!");
+        fileChooser.setAcceptAllFileFilterUsed(false);
         FileFilter ff = new FileFilter() {
             @Override
             public boolean accept(File f) {
@@ -1246,8 +1243,9 @@ public class MainWindow extends javax.swing.JFrame {
                 return "Map Files";
             }
         };
-        fileChooser.removeChoosableFileFilter(fileChooser.getAcceptAllFileFilter());
         fileChooser.setFileFilter(ff);
+        fileChooser.setAcceptAllFileFilterUsed(true);
+        fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
         int returnVal = fileChooser.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             bigBoy = fileChooser.getSelectedFile();
@@ -1265,6 +1263,7 @@ public class MainWindow extends javax.swing.JFrame {
         } else {
             System.out.println("...nevermind, you cancelled!");
         }
+        fileChooser.removeChoosableFileFilter(ff);
     }//GEN-LAST:event_OpenActionPerformed
 
     private void AddEntryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddEntryActionPerformed
@@ -1402,14 +1401,13 @@ public class MainWindow extends javax.swing.JFrame {
         File outputFile;
         String outputFileName;
 
+        fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
         if (currSHA1.length == 1) {
             outputFileName = currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1);
             outputFile = new File(outputFileName);
             fileChooser.setSelectedFile(outputFile);
         } else {
-            fileChooser.setCurrentDirectory(new java.io.File("."));
             fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            fileChooser.setAcceptAllFileFilterUsed(false);
 
         }
 
@@ -1455,6 +1453,8 @@ public class MainWindow extends javax.swing.JFrame {
             return;
         }
 
+        fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
+        fileChooser.setFileFilter(null);
         fileChooser.setFileFilter(fileChooser.getAcceptAllFileFilter());
         int returnVal = fileChooser.showOpenDialog(this);
 
@@ -1500,6 +1500,7 @@ public class MainWindow extends javax.swing.JFrame {
         String outputFileName = currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1);
         File outputFile = new File(outputFileName.substring(0, outputFileName.length() - 5) + "lam");
 
+        fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
         fileChooser.setFileFilter(null);
         fileChooser.setSelectedFile(outputFile);
         int returnVal = fileChooser.showSaveDialog(this);
@@ -1578,6 +1579,8 @@ public class MainWindow extends javax.swing.JFrame {
             return;
         }
 
+        fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
+        fileChooser.setFileFilter(null);
         fileChooser.setFileFilter(fileChooser.getAcceptAllFileFilter());
         int returnVal = fileChooser.showOpenDialog(this);
 
@@ -1619,6 +1622,7 @@ public class MainWindow extends javax.swing.JFrame {
                 return "XML Files";
             }
         };
+        fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
         fileChooser.removeChoosableFileFilter(fileChooser.getAcceptAllFileFilter());
         fileChooser.setFileFilter(ff);
         int returnVal = fileChooser.showOpenDialog(this);
@@ -1674,7 +1678,17 @@ public class MainWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
     private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
-        System.out.println((MiscUtils.hexStringToByteArray("FE")));
+        fileChooser.setFileFilter(fileChooser.getAcceptAllFileFilter());
+        int returnVal = fileChooser.showOpenDialog(this);
+
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            try {
+                File newFile = fileChooser.getSelectedFile();
+                MiscUtils.readLBP2SDF(newFile);
+            } catch (Exception ex) {
+                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
     }//GEN-LAST:event_jMenuItem3ActionPerformed
 
     private void PackagePLANActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PackagePLANActionPerformed
@@ -2003,6 +2017,16 @@ public class MainWindow extends javax.swing.JFrame {
 
     }//GEN-LAST:event_MAPtoRLSTActionPerformed
 
+    private void OutputTextAreaMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_OutputTextAreaMouseReleased
+        if (evt.isPopupTrigger())
+            ConsolePopup.show(OutputTextArea, evt.getX(), evt.getY());
+    }//GEN-LAST:event_OutputTextAreaMouseReleased
+
+    private void ClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClearActionPerformed
+       OutputTextArea.selectAll();
+       OutputTextArea.replaceSelection("");
+    }//GEN-LAST:event_ClearActionPerformed
+
 
     public void showUserDialog(String title, String message) {
         if ("Warning".equals(title)) {
@@ -2045,6 +2069,8 @@ public class MainWindow extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenuItem AddEntry;
     private javax.swing.JMenuItem AddFileToFARC;
+    private javax.swing.JMenuItem Clear;
+    private javax.swing.JPopupMenu ConsolePopup;
     private javax.swing.JMenu DEV;
     private javax.swing.JTable EditorPanel;
     private javax.swing.JMenuItem Exit;

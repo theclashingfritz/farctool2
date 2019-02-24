@@ -142,6 +142,7 @@ public class ZlibUtils {
             case "4F415462":
             case "4D534862":
             case "534C5462":
+            case "50414C62":
                     System.out.println("Custom Compression Full Format");
                     return decompressFull(workingFile);
             default:
