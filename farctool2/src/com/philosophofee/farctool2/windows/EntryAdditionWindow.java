@@ -41,7 +41,7 @@ public class EntryAdditionWindow extends javax.swing.JFrame {
         initComponents();
         setTitle("Entry Adder");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setIconImage(new ImageIcon(getClass().getResource("../resources/farctool2_icon.png")).getImage());
+        setIconImage(new ImageIcon(getClass().getResource("resources/farctool2_icon.png")).getImage());
         setLocationRelativeTo(null);
         this.window = window;
 
