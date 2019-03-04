@@ -450,11 +450,11 @@ public static long getLong(byte[] bytes) {
      }
  }
   
- public static void readLBP2SDF(File SDF) throws IOException
+ public static void reverseBytes(File file) throws IOException
     {
         int seek = 0;
         byte[] buffer = null;
-        try (RandomAccessFile fileAccess = new RandomAccessFile(SDF, "rw")) {
+        try (RandomAccessFile fileAccess = new RandomAccessFile(file, "rw")) {
             for (int i = 0; fileAccess.length() > (i * 4); i++)
             {
                 buffer = new byte[4];

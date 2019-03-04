@@ -353,8 +353,6 @@ public class MainWindow extends javax.swing.JFrame {
         ExportTEXtoPNG = new javax.swing.JMenuItem();
         ExportTEXtoJPG = new javax.swing.JMenuItem();
         ExportTEXtoDDS = new javax.swing.JMenuItem();
-        ExportTRANStoXML = new javax.swing.JMenuItem();
-        ExportMOLto3DS = new javax.swing.JMenuItem();
         jMenu5 = new javax.swing.JMenu();
         AddFileToFARC = new javax.swing.JMenuItem();
         jSeparator5 = new javax.swing.JPopupMenu.Separator();
@@ -369,7 +367,7 @@ public class MainWindow extends javax.swing.JFrame {
         jMenu7 = new javax.swing.JMenu();
         MAPtoRLST = new javax.swing.JMenuItem();
         PrintDependenciesButton = new javax.swing.JMenuItem();
-        jMenuItem3 = new javax.swing.JMenuItem();
+        ReverseBytes = new javax.swing.JMenuItem();
         jMenu3 = new javax.swing.JMenu();
         InstallMod = new javax.swing.JMenuItem();
         PackagePLAN = new javax.swing.JMenuItem();
@@ -377,7 +375,6 @@ public class MainWindow extends javax.swing.JFrame {
         jMenuItem2 = new javax.swing.JMenuItem();
         DEV = new javax.swing.JMenu();
         DEV.setVisible(false);
-        jMenuItem1 = new javax.swing.JMenuItem();
 
         javax.swing.GroupLayout jFrame1Layout = new javax.swing.GroupLayout(jFrame1.getContentPane());
         jFrame1.getContentPane().setLayout(jFrame1Layout);
@@ -678,24 +675,6 @@ public class MainWindow extends javax.swing.JFrame {
 
         ToolsMenu.add(jMenu2);
 
-        ExportTRANStoXML.setText("Export .TRANS as .XML");
-        ExportTRANStoXML.setEnabled(false);
-        ExportTRANStoXML.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ExportTRANStoXMLActionPerformed(evt);
-            }
-        });
-        ToolsMenu.add(ExportTRANStoXML);
-
-        ExportMOLto3DS.setText("Export .MOL as .3DS (LBP1)");
-        ExportMOLto3DS.setEnabled(false);
-        ExportMOLto3DS.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ExportMOLto3DSActionPerformed(evt);
-            }
-        });
-        ToolsMenu.add(ExportMOLto3DS);
-
         jMenuBar1.add(ToolsMenu);
 
         jMenu5.setText("FARC");
@@ -788,13 +767,13 @@ public class MainWindow extends javax.swing.JFrame {
         });
         jMenu7.add(PrintDependenciesButton);
 
-        jMenuItem3.setText("Reverse Bytes...");
-        jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
+        ReverseBytes.setText("Reverse Bytes...");
+        ReverseBytes.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem3ActionPerformed(evt);
+                ReverseBytesActionPerformed(evt);
             }
         });
-        jMenu7.add(jMenuItem3);
+        jMenu7.add(ReverseBytes);
 
         jMenuBar1.add(jMenu7);
 
@@ -832,15 +811,6 @@ public class MainWindow extends javax.swing.JFrame {
         jMenuBar1.add(HelpMenu);
 
         DEV.setText("*DEV*");
-
-        jMenuItem1.setText("Check if GUID exists");
-        jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem1ActionPerformed(evt);
-            }
-        });
-        DEV.add(jMenuItem1);
-
         jMenuBar1.add(DEV);
 
         setJMenuBar(jMenuBar1);
@@ -986,10 +956,6 @@ public class MainWindow extends javax.swing.JFrame {
         }
         fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
     }//GEN-LAST:event_ExtractRawActionPerformed
-
-    private void ExportMOLto3DSActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportMOLto3DSActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_ExportMOLto3DSActionPerformed
 
     private void ExportTEXtoPNGActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportTEXtoPNGActionPerformed
         if (bigBoy == null) {
@@ -1491,88 +1457,6 @@ public class MainWindow extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_ReplaceSelectedActionPerformed
 
-    private void ExportTRANStoXMLActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportTRANStoXMLActionPerformed
-        if (!currFileName[0].contains(".trans")) {
-            System.out.println("This tool requires a .TRANS file!");
-            return;
-        }
-
-        String outputFileName = currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1);
-        File outputFile = new File(outputFileName.substring(0, outputFileName.length() - 5) + "lam");
-
-        fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
-        fileChooser.setFileFilter(null);
-        fileChooser.setSelectedFile(outputFile);
-        int returnVal = fileChooser.showSaveDialog(this);
-
-        if (returnVal == JFileChooser.APPROVE_OPTION) {
-            outputFile = fileChooser.getSelectedFile();
-            byte language[] = FarcUtils.pullFromFarc(currSHA1[0], bigBoyFarc);
-
-            try (FileOutputStream output = new FileOutputStream(new File("trans_temp"))) {
-                try {
-                    output.write(language);
-                } catch (IOException ex) {
-                    Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            } catch (FileNotFoundException ex) {
-                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-            }
-
-            try (RandomAccessFile trans = new RandomAccessFile("trans_temp", "rw")) {
-                Boolean isEnd = false;
-                int stringEnd;
-                int stringOffset;
-                byte[] buffer = null;
-                int offset = 4;
-                int entries = trans.readInt();
-                String[] strings = new String[entries];
-                int[] keys = new int[entries];
-
-                for (int i = 0; i < entries; i++) {
-                    keys[i] = trans.readInt();
-                    stringOffset = trans.readInt() + ((entries * 8) + 6);
-                    trans.seek(stringOffset);
-
-                    stringEnd = stringOffset;
-                    if (i == (entries - 1)) {
-                        while (!isEnd) {
-                            stringEnd++;
-                            buffer = new byte[1];
-                            trans.read(buffer);
-                            if (MiscUtils.byteArrayToHexString(buffer).equals("FE"))
-                                isEnd = true;
-                        }
-                    } else stringEnd = (int) trans.length();
-
-                    trans.seek(stringOffset);
-
-
-                    buffer = new byte[stringEnd - stringOffset];
-                    trans.read(buffer);
-                    strings[i] = new String(buffer, "UTF-8");
-
-                    offset += 8;
-                    trans.seek(offset);
-
-                }
-                String output = "";
-                for (int i: keys) {
-                    output += keys[i] + "\n " + strings[i] + "\n";
-                }
-                PrintWriter out = new PrintWriter(outputFile.getAbsolutePath());
-                out.println(output);
-
-            } catch (FileNotFoundException ex) {
-                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-    }//GEN-LAST:event_ExportTRANStoXMLActionPerformed
-
     private void AddFileToFARCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddFileToFARCActionPerformed
         if (bigBoyFarc == null) {
             showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
@@ -1647,49 +1531,19 @@ public class MainWindow extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_InstallModActionPerformed
 
-    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        long offset = MiscUtils.findGUIDOffset("000139EE00", bigBoy);
-        try {
-            if (offset == 0) return;
-
-            RandomAccessFile map = new RandomAccessFile(bigBoy, "rw");
-            Boolean beginning = false;
-
-            offset -= 33;
-            while (!beginning) {
-                offset -= 2;
-                map.seek(offset);
-
-                byte[] buffer = new byte[1];
-                map.read(buffer);
-
-                if (MiscUtils.byteArrayToHexString(buffer).equals("00"))
-                    beginning = true;
-            }
-            offset++;
-            System.out.println(offset);
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-
-    }//GEN-LAST:event_jMenuItem1ActionPerformed
-
-    private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
+    private void ReverseBytesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ReverseBytesActionPerformed
         fileChooser.setFileFilter(fileChooser.getAcceptAllFileFilter());
         int returnVal = fileChooser.showOpenDialog(this);
 
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             try {
                 File newFile = fileChooser.getSelectedFile();
-                MiscUtils.readLBP2SDF(newFile);
+                MiscUtils.reverseBytes(newFile);
             } catch (Exception ex) {
                 Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-    }//GEN-LAST:event_jMenuItem3ActionPerformed
+    }//GEN-LAST:event_ReverseBytesActionPerformed
 
     private void PackagePLANActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PackagePLANActionPerformed
         if (bigBoyFarc == null) {
@@ -2074,11 +1928,9 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JMenu DEV;
     private javax.swing.JTable EditorPanel;
     private javax.swing.JMenuItem Exit;
-    private javax.swing.JMenuItem ExportMOLto3DS;
     private javax.swing.JMenuItem ExportTEXtoDDS;
     private javax.swing.JMenuItem ExportTEXtoJPG;
     private javax.swing.JMenuItem ExportTEXtoPNG;
-    private javax.swing.JMenuItem ExportTRANStoXML;
     private javax.swing.JMenuItem ExtractDecompressed;
     private javax.swing.JMenuItem ExtractRaw;
     private javax.swing.JMenu FileMenu;
@@ -2096,6 +1948,7 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JMenuItem PrintDependenciesButton;
     private javax.swing.JMenuItem RemoveEntry;
     private javax.swing.JMenuItem ReplaceSelected;
+    private javax.swing.JMenuItem ReverseBytes;
     private javax.swing.JSplitPane RightHandStuff;
     private javax.swing.JScrollPane TextPrevScroll;
     private javax.swing.JTextArea TextPreview;
@@ -2118,9 +1971,7 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu6;
     private javax.swing.JMenu jMenu7;
     private javax.swing.JMenuBar jMenuBar1;
-    private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
-    private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
