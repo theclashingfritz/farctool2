@@ -174,7 +174,7 @@
                 <Property name="text" type="java.lang.String" value="Load"/>
               </Properties>
               <SubComponents>
-                <MenuItem class="javax.swing.JMenuItem" name="Open">
+                <MenuItem class="javax.swing.JMenuItem" name="OpenMAP">
                   <Properties>
                     <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
                       <KeyStroke key="Ctrl+O"/>
@@ -182,15 +182,23 @@
                     <Property name="text" type="java.lang.String" value=".MAP"/>
                   </Properties>
                   <Events>
-                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="OpenActionPerformed"/>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="OpenMAPActionPerformed"/>
                   </Events>
                 </MenuItem>
-                <MenuItem class="javax.swing.JMenuItem" name="OpenFarc">
+                <MenuItem class="javax.swing.JMenuItem" name="OpenFARC">
                   <Properties>
                     <Property name="text" type="java.lang.String" value=".FARC"/>
                   </Properties>
                   <Events>
-                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="OpenFarcActionPerformed"/>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="OpenFARCActionPerformed"/>
+                  </Events>
+                </MenuItem>
+                <MenuItem class="javax.swing.JMenuItem" name="OpenFAR4">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value=".FAR4"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="OpenFAR4ActionPerformed"/>
                   </Events>
                 </MenuItem>
               </SubComponents>

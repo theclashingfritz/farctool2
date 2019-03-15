@@ -8,9 +8,6 @@ import com.philosophofee.farctool2.streams.TextAreaOutputStream;
 import com.philosophofee.farctool2.utilities.MiscUtils;
 import com.philosophofee.farctool2.utilities.ZlibUtils;
 import com.philosophofee.farctool2.utilities.FarcUtils;
-import java.awt.FileDialog;
-import java.awt.Insets;
-import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -20,35 +17,22 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
-import static java.lang.Class.forName;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Date;
-import java.util.Formatter;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.DataFormatException;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
-import javax.swing.JEditorPane;
-
 import javax.swing.JFileChooser;
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.plaf.basic.BasicLookAndFeel;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -59,31 +43,31 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import org.riversun.bigdoc.bin.BigFileSearcher;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
-
 import tv.porst.jhexview.*;
 import tv.porst.jhexview.JHexView.DefinitionStatus;
 
 public class MainWindow extends javax.swing.JFrame {
 
-    public File bigBoy = null;
-    public File bigBoyFarc = null;
+    public File MAP = null;
+    public File FARC = null;
+    public File FAR4 = null;
     public String currSHA1[] = null;
     public String currGUID[] = null;
     public String currFileName[] = null;
     public String currSize[] = null;
-    public static Boolean DeveloperMode = false;
+    
+    public String FAR4SHA1[] = null;
+    public String FAR4Size[] = null;
+    
+    public static Boolean developerMode = false;
     public TreePath[] selectedPaths = null;
 
     public MainWindow() {
@@ -96,210 +80,230 @@ public class MainWindow extends javax.swing.JFrame {
         aboutWindow.setIconImage(new ImageIcon(getClass().getResource("resources/farctool2_icon.png")).getImage());
 
         mapTree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
-        mapTree.addTreeSelectionListener(new TreeSelectionListener() {
-            @Override
-            public void valueChanged(TreeSelectionEvent e) {
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) mapTree.getLastSelectedPathComponent();
-                selectedPaths = mapTree.getSelectionPaths();
-                if (selectedPaths != null) {
-                    currSHA1 = new String[selectedPaths.length];
-                    currGUID = new String[selectedPaths.length];
-                    currFileName = new String[selectedPaths.length];
-                    currSize = new String[selectedPaths.length];
-                } else {
-                    currSHA1 = null;
-                    currGUID = null;
-                    currFileName = null;
-                    currSize = null;
-                    selectedPaths = new TreePath[0];
+        mapTree.addTreeSelectionListener((TreeSelectionEvent e) -> {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) mapTree.getLastSelectedPathComponent();
+            selectedPaths = mapTree.getSelectionPaths();
+            if (selectedPaths != null) {
+                currSHA1 = new String[selectedPaths.length];
+                currGUID = new String[selectedPaths.length];
+                currFileName = new String[selectedPaths.length];
+                currSize = new String[selectedPaths.length];
+            } else {
+                currSHA1 = null;
+                currGUID = null;
+                currFileName = null;
+                currSize = null;
+                selectedPaths = new TreePath[0];
+            }
+            
+            for (int currentTreeNode = 0; currentTreeNode < selectedPaths.length; currentTreeNode++) {
+                
+                if (node == null) {
+                    return;
                 }
-
-                for (int currentTreeNode = 0; currentTreeNode < selectedPaths.length; currentTreeNode++) {
-
-                    if (node == null) {
-                        return;
+                node = (DefaultMutableTreeNode) selectedPaths[currentTreeNode].getLastPathComponent();
+                if (node.getChildCount() > 0) {
+                    currSHA1[currentTreeNode] = null;
+                    currGUID[currentTreeNode] = null;
+                    currFileName[currentTreeNode] = null;
+                    currSize[currentTreeNode] = null;
+                    continue;
+                }
+                if (mapTree.getSelectionPath().getPathCount() == 1) {
+                    System.out.println("Root");
+                    return;
+                }
+                String[] test = new String[selectedPaths[currentTreeNode].getPathCount()];
+                for (int i = 1; i < selectedPaths[currentTreeNode].getPathCount(); i++) {
+                    test[i] = selectedPaths[currentTreeNode].getPathComponent(i).toString();
+                }
+                String finalString = new String();
+                for (int i = 1; i < selectedPaths[currentTreeNode].getPathCount(); i++) {
+                    finalString += test[i];
+                    if (i != selectedPaths[currentTreeNode].getPathCount() - 1) {
+                        finalString += "/";
                     }
-                    node = (DefaultMutableTreeNode) selectedPaths[currentTreeNode].getLastPathComponent();
-                    if (node.getChildCount() > 0) {
-                        currSHA1[currentTreeNode] = null;
-                        currGUID[currentTreeNode] = null;
-                        currFileName[currentTreeNode] = null;
-                        currSize[currentTreeNode] = null;
-                        continue;
-                    }
-                    if (mapTree.getSelectionPath().getPathCount() == 1) {
-                        System.out.println("Root");
-                        return;
-                    }
-                    String[] test = new String[selectedPaths[currentTreeNode].getPathCount()];
-                    for (int i = 1; i < selectedPaths[currentTreeNode].getPathCount(); i++) {
-                        test[i] = selectedPaths[currentTreeNode].getPathComponent(i).toString();
-                    }
-                    String finalString = new String();
-                    for (int i = 1; i < selectedPaths[currentTreeNode].getPathCount(); i++) {
-                        finalString += test[i];
-                        if (i != selectedPaths[currentTreeNode].getPathCount() - 1) {
-                            finalString += "/";
-                        }
-                    }
-
-                    if (finalString.contains(".")) {
-                        //System.out.println("You currently have selected " + finalString); //this is annoying
-                        currFileName[currentTreeNode] = finalString;
-                        EditorPanel.setValueAt(finalString, 0, 1);
-                        KMPMatch matcher = new KMPMatch();
-
-                        try {
-                            long offset = 0;
-                            boolean lbp3map = false;
-                            offset = matcher.indexOf(Files.readAllBytes(bigBoy.toPath()), finalString.getBytes());
-                            try (RandomAccessFile mapAccess = new RandomAccessFile(bigBoy, "rw")) {
-                                mapAccess.seek(0);
-                                if (mapAccess.readInt() == 21496064) {
-                                    lbp3map = true;
-                                }
-
-                                mapAccess.seek(offset);
-                                offset += finalString.length();
-                                mapAccess.seek(offset);
-
-                                if (lbp3map == false) {
-                                    offset += 4;
-                                    mapAccess.seek(offset);
-                                }
-
-                                //Get timestamp
-                                String fileTimeStamp = "";
-                                for (int i = 0; i < 4; i++) {
-                                    fileTimeStamp += String.format("%02X", mapAccess.readByte());
-                                    offset += 1;
-                                    mapAccess.seek(offset);
-                                }
-                                EditorPanel.setValueAt(fileTimeStamp, 1, 2); //set hex timestamp
-                                Date readableDate = new Date();
-                                readableDate.setTime((long) Integer.parseInt(fileTimeStamp, 16) * 1000);
-                                EditorPanel.setValueAt(readableDate.toString(), 1, 1); //set readable timestamp
-
-                                //Get size
-                                String fileSize = "";
-                                for (int i = 0; i < 4; i++) {
-                                    fileSize += String.format("%02X", mapAccess.readByte());
-                                    offset += 1;
-                                    mapAccess.seek(offset);
-                                }
-                                currSize[currentTreeNode] = fileSize;
-                                EditorPanel.setValueAt(fileSize, 2, 2); //set hex filesize
-                                EditorPanel.setValueAt(Integer.parseInt(fileSize, 16), 2, 1); //set readable filesize
-
-                                //Get hash
-                                String fileHash = "";
-                                for (int i = 0; i < 20; i++) {
-                                    fileHash += String.format("%02X", mapAccess.readByte());
-                                    offset += 1;
-                                    mapAccess.seek(offset);
-                                }
-                                EditorPanel.setValueAt(fileHash, 3, 2); //set hex hash
-                                currSHA1[currentTreeNode] = fileHash;
-                                EditorPanel.setValueAt(fileHash, 3, 1); //set readable hash (redundant)
-
-                                //Get guid
-                                String fileGUID = "";
-                                for (int i = 0; i < 4; i++) {
-                                    fileGUID += String.format("%02X", mapAccess.readByte());
-                                    offset += 1;
-                                    mapAccess.seek(offset);
-                                }
-                                currGUID[currentTreeNode] = fileGUID;
-                                EditorPanel.setValueAt(fileGUID, 4, 2); //set hex guid
-                                EditorPanel.setValueAt("g" + Integer.parseInt(fileGUID, 16), 4, 1); //set readable guid
-                            } catch (IOException ex) {
-                                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                
+                if (finalString.contains(".") && FARC != null && FAR4 == null) {
+                    //System.out.println("You currently have selected " + finalString); //this is annoying
+                    currFileName[currentTreeNode] = finalString;
+                    EditorPanel.setValueAt(finalString, 0, 1);
+                    KMPMatch matcher = new KMPMatch();
+                    
+                    try {
+                        long offset = 0;
+                        boolean lbp3map = false;
+                        offset = matcher.indexOf(Files.readAllBytes(MAP.toPath()), finalString.getBytes());
+                        try (RandomAccessFile mapAccess = new RandomAccessFile(MAP, "rw")) {
+                            mapAccess.seek(0);
+                            if (mapAccess.readInt() == 21496064) {
+                                lbp3map = true;
                             }
+                            
+                            mapAccess.seek(offset);
+                            offset += finalString.length();
+                            mapAccess.seek(offset);
+                            
+                            if (lbp3map == false) {
+                                offset += 4;
+                                mapAccess.seek(offset);
+                            }
+                            
+                            //Get timestamp
+                   
+                            String fileTimeStamp = "";
+                            for (int i = 0; i < 4; i++)
+                            {
+                                fileTimeStamp += String.format("%02X", mapAccess.readByte());
+                                offset += 1;
+                                mapAccess.seek(offset);
+                            }
+                            EditorPanel.setValueAt(fileTimeStamp, 1, 2); //set hex timestamp
+                            Date readableDate = new Date();
+                            readableDate.setTime((long) Integer.parseInt(fileTimeStamp, 16) * 1000);
+                            EditorPanel.setValueAt(readableDate.toString(), 1, 1); //set readable timestamp
+                            
+                            //Get size
+                            String fileSize = "";
+                            for (int i = 0; i < 4; i++) {
+                                fileSize += String.format("%02X", mapAccess.readByte());
+                                offset += 1;
+                                mapAccess.seek(offset);
+                            }
+                            currSize[currentTreeNode] = fileSize;
+                            EditorPanel.setValueAt(fileSize, 2, 2); //set hex filesize
+                            EditorPanel.setValueAt(Integer.parseInt(fileSize, 16), 2, 1); //set readable filesize
+                            
+                            //Get hash
+                            String fileHash = "";
+                            for (int i = 0; i < 20; i++) {
+                                fileHash += String.format("%02X", mapAccess.readByte());
+                                offset += 1;
+                                mapAccess.seek(offset);
+                            }
+                            EditorPanel.setValueAt(fileHash, 3, 2); //set hex hash
+                            currSHA1[currentTreeNode] = fileHash;
+                            EditorPanel.setValueAt(fileHash, 3, 1); //set readable hash (redundant)
+                            
+                            //Get guid
+                            String fileGUID = "";
+                            for (int i = 0; i < 4; i++) {
+                                fileGUID += String.format("%02X", mapAccess.readByte());
+                                offset += 1;
+                                mapAccess.seek(offset);
+                            }
+                            currGUID[currentTreeNode] = fileGUID;
+                            EditorPanel.setValueAt(fileGUID, 4, 2); //set hex guid
+                            EditorPanel.setValueAt("g" + Integer.parseInt(fileGUID, 16), 4, 1); //set readable guid
                         } catch (IOException ex) {
                             Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
                         }
+                    } catch (IOException ex) {
+                        Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
                     }
+                } else if (FAR4 != null)
+                {
+                    DefaultMutableTreeNode myNode = (DefaultMutableTreeNode) selectedPaths[currentTreeNode].getLastPathComponent();
+                    int NodeIndex = myNode.getParent().getIndex(myNode);
+                    
+                    currFileName[currentTreeNode] = finalString;
+                    EditorPanel.setValueAt(finalString, 0, 1);
+                    
+                    EditorPanel.setValueAt(FAR4SHA1[NodeIndex], 3, 2); //set hex hash
+                    currSHA1[currentTreeNode] = FAR4SHA1[NodeIndex];
+                    EditorPanel.setValueAt(FAR4SHA1[NodeIndex], 3, 1); //set readable hash (redundant)
+                    
+                    currSize[currentTreeNode] = FAR4Size[NodeIndex];
+                    EditorPanel.setValueAt(FAR4Size[NodeIndex], 2, 2); //set hex filesize
+                    EditorPanel.setValueAt(Integer.parseInt(FAR4Size[NodeIndex], 16), 2, 1); //set readable filesize
+                            
+                    EditorPanel.setValueAt("N/A", 4, 2);
+                    EditorPanel.setValueAt("N/A", 4, 1); 
+                    
+                    EditorPanel.setValueAt("N/A", 1, 2);
+                    EditorPanel.setValueAt("N/A", 1, 1);
                 }
-
-
-                if (bigBoyFarc != null && selectedPaths.length != 0 && currFileName[0] != null) {
-                    PreviewLabel.setVisible(true);
-                    PreviewLabel.setIcon(null);
-                    PreviewLabel.setText("No preview available");
-                    TextPrevScroll.setVisible(false);
-                    TextPreview.setVisible(false);
-
-                    byte[] workWithData = FarcUtils.pullFromFarc(currSHA1[currFileName.length - 1], bigBoyFarc);
-                    if (workWithData == null) {
-                        System.out.println("As a result, I wasn't able to preview anything...");
-                        hexViewer.setData(null);
-                        hexViewer.setDefinitionStatus(DefinitionStatus.UNDEFINED);
-                        hexViewer.setEnabled(false);
-                        return;
-                    }
-                    if (
+            }
+            
+            
+            if ((FARC != null || FAR4 != null)&& selectedPaths.length != 0 && currFileName[0] != null) {
+                PreviewLabel.setVisible(true);
+                PreviewLabel.setIcon(null);
+                PreviewLabel.setText("No preview available");
+                TextPrevScroll.setVisible(false);
+                TextPreview.setVisible(false);
+                
+                byte[] workWithData = null;
+                if (FAR4 != null)
+                    workWithData = FarcUtils.pullFromFAR4(currFileName[currFileName.length - 1].split("[.]")[0], currSize[currFileName.length - 1], FAR4);
+                else 
+                    workWithData = FarcUtils.pullFromFarc(currSHA1[currFileName.length - 1], FARC);
+                if (workWithData == null) {
+                    System.out.println("As a result, I wasn't able to preview anything...");
+                    hexViewer.setData(null);
+                    hexViewer.setDefinitionStatus(DefinitionStatus.UNDEFINED);
+                    hexViewer.setEnabled(false);
+                    return;
+                }
+                if (
                         workWithData[3] == 0x74 ||
                         currFileName[currFileName.length - 1].contains(".nws") ||
                         currFileName[currFileName.length - 1].contains(".txt") ||
                         currFileName[currFileName.length - 1].contains(".rlst") ||
                         currFileName[currFileName.length - 1].contains(".xml") ||
                         currFileName[currFileName.length - 1].contains(".cha")
-                    ) {
-                        //Text file we can read with the text preview pane
-                        PreviewLabel.setVisible(false);
-                        TextPrevScroll.setVisible(true);
-                        TextPreview.setVisible(true);
-                        TextPreview.setText(new String(workWithData));
-                        TextPreview.setCaretPosition(0);
+                        ) {
+                    //Text file we can read with the text preview pane
+                    PreviewLabel.setVisible(false);
+                    TextPrevScroll.setVisible(true);
+                    TextPreview.setVisible(true);
+                    TextPreview.setText(new String(workWithData));
+                    TextPreview.setCaretPosition(0);
+                }
+                if (currFileName[currFileName.length - 1].contains(".tex")) {
+                    try {
+                        ZlibUtils.decompressThis(workWithData);
+                        PreviewLabel.setVisible(true);
+                        TextPrevScroll.setVisible(false);
+                        TextPreview.setVisible(false);
+                        PreviewLabel.setText(null);
+                        PreviewLabel.setIcon(MiscUtils.createDDSIcon("temp_prev_tex"));
+                    } catch (DataFormatException | IOException ex) {
+                        Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    if (currFileName[currFileName.length - 1].contains(".tex")) {
-                        try {
-                            ZlibUtils.decompressThis(workWithData);
-                            PreviewLabel.setVisible(true);
-                            TextPrevScroll.setVisible(false);
-                            TextPreview.setVisible(false);
-                            PreviewLabel.setText(null);
-                            PreviewLabel.setIcon(MiscUtils.createDDSIcon("temp_prev_tex"));
-                        } catch (DataFormatException ex) {
-                            Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-                        } catch (IOException ex) {
-                            Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                    }
-
-                    if (currFileName[currFileName.length - 1].contains(".png") || currFileName[currFileName.length - 1].contains(".jpg")) {
-                        try {
-                            InputStream in = new ByteArrayInputStream(workWithData);
+                }
+                
+                if (currFileName[currFileName.length - 1].contains(".png") || currFileName[currFileName.length - 1].contains(".jpg")) {
+                    try {
+                        try (InputStream in = new ByteArrayInputStream(workWithData)) {
                             BufferedImage image = ImageIO.read( in );
                             PreviewLabel.setVisible(true);
                             TextPrevScroll.setVisible(false);
                             TextPreview.setVisible(false);
                             PreviewLabel.setText(null);
-                            PreviewLabel.setIcon(MiscUtils.getScaledImage(image)); in .close();
-                        } catch (IOException ex) {
-                            Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+                            PreviewLabel.setIcon(MiscUtils.getScaledImage(image));
                         }
-
+                    } catch (IOException ex) {
+                        Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
                     }
-
-                    if (currFileName[currFileName.length - 1].contains(".dds")) {
-                        PreviewLabel.setVisible(true);
-                        TextPrevScroll.setVisible(false);
-                        TextPreview.setVisible(false);
-                        PreviewLabel.setText(null);
-                        PreviewLabel.setIcon(MiscUtils.createImageIconFromDDS(workWithData));
-                    }
-
-
-                    hexViewer.setData(new SimpleDataProvider(workWithData));
-                    hexViewer.setDefinitionStatus(DefinitionStatus.DEFINED);
-                    hexViewer.setEnabled(true);
 
                 }
+                
+                if (currFileName[currFileName.length - 1].contains(".dds")) {
+                    PreviewLabel.setVisible(true);
+                    TextPrevScroll.setVisible(false);
+                    TextPreview.setVisible(false);
+                    PreviewLabel.setText(null);
+                    PreviewLabel.setIcon(MiscUtils.createImageIconFromDDS(workWithData));
+                }
+                
+                
+                hexViewer.setData(new SimpleDataProvider(workWithData));
+                hexViewer.setDefinitionStatus(DefinitionStatus.DEFINED);
+                hexViewer.setEnabled(true);
+                
             }
-
-
-
         });
         PrintStream out = new CustomPrintStream(new TextAreaOutputStream(OutputTextArea));
         System.setOut(out);
@@ -344,8 +348,9 @@ public class MainWindow extends javax.swing.JFrame {
         jMenuBar1 = new javax.swing.JMenuBar();
         FileMenu = new javax.swing.JMenu();
         jMenu4 = new javax.swing.JMenu();
-        Open = new javax.swing.JMenuItem();
-        OpenFarc = new javax.swing.JMenuItem();
+        OpenMAP = new javax.swing.JMenuItem();
+        OpenFARC = new javax.swing.JMenuItem();
+        OpenFAR4 = new javax.swing.JMenuItem();
         jSeparator6 = new javax.swing.JPopupMenu.Separator();
         Exit = new javax.swing.JMenuItem();
         ToolsMenu = new javax.swing.JMenu();
@@ -614,22 +619,30 @@ public class MainWindow extends javax.swing.JFrame {
 
         jMenu4.setText("Load");
 
-        Open.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_MASK));
-        Open.setText(".MAP");
-        Open.addActionListener(new java.awt.event.ActionListener() {
+        OpenMAP.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_MASK));
+        OpenMAP.setText(".MAP");
+        OpenMAP.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                OpenActionPerformed(evt);
+                OpenMAPActionPerformed(evt);
             }
         });
-        jMenu4.add(Open);
+        jMenu4.add(OpenMAP);
 
-        OpenFarc.setText(".FARC");
-        OpenFarc.addActionListener(new java.awt.event.ActionListener() {
+        OpenFARC.setText(".FARC");
+        OpenFARC.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                OpenFarcActionPerformed(evt);
+                OpenFARCActionPerformed(evt);
             }
         });
-        jMenu4.add(OpenFarc);
+        jMenu4.add(OpenFARC);
+
+        OpenFAR4.setText(".FAR4");
+        OpenFAR4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                OpenFAR4ActionPerformed(evt);
+            }
+        });
+        jMenu4.add(OpenFAR4);
 
         FileMenu.add(jMenu4);
         FileMenu.add(jSeparator6);
@@ -836,18 +849,18 @@ public class MainWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_formWindowClosed
 
     private void PrintDependenciesButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PrintDependenciesButtonActionPerformed
-        if (bigBoy == null) {
+        if (MAP == null) {
             showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
             return;
         }
-        if (bigBoyFarc == null) {
+        if (FARC == null) {
             showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
             return;
         }
         try {
             for (int pathCount = 0; pathCount < currSHA1.length; pathCount++) {
                 if (currFileName[pathCount] == null) continue;
-                byte[] bytesToRead = FarcUtils.pullFromFarc(currSHA1[pathCount], bigBoyFarc);
+                byte[] bytesToRead = FarcUtils.pullFromFarc(currSHA1[pathCount], FARC);
                 ByteArrayInputStream fileAccess = new ByteArrayInputStream(bytesToRead);
                 fileAccess.skip(8);
                 //Get dependencies offset
@@ -884,7 +897,7 @@ public class MainWindow extends javax.swing.JFrame {
 
                         fileAccess.read(dependencyTypeByte);
                         dependencyType = Integer.parseInt(MiscUtils.byteArrayToHexString(dependencyTypeByte), 16);
-                        String fileNameNew = MiscUtils.getFileNameFromGUID(MiscUtils.byteArrayToHexString(dependencyGUIDByte), bigBoy);
+                        String fileNameNew = MiscUtils.getFileNameFromGUID(MiscUtils.byteArrayToHexString(dependencyGUIDByte), MAP);
                         if (fileNameNew.contains("Error")) {
                             levelFail = true;
                         }
@@ -907,13 +920,16 @@ public class MainWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_jMenuItem2ActionPerformed
 
     private void ExtractRawActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExtractRawActionPerformed
-        if (bigBoy == null) {
-            showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-            return;
-        }
-        if (bigBoyFarc == null) {
-            showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-            return;
+        if (FAR4 == null)
+        {
+            if (MAP == null) {
+                showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
+                return;
+            }
+            if (FARC == null) {
+                showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
+                return;
+            }
         }
         File outputFile;
         String outputFileName;
@@ -938,7 +954,11 @@ public class MainWindow extends javax.swing.JFrame {
 
         for (int pathCount = 0; pathCount < currSHA1.length; pathCount++) {
             if (currFileName[pathCount] == null) continue;
-            byte[] bytesToSave = FarcUtils.pullFromFarc(currSHA1[pathCount], bigBoyFarc);
+            byte[] bytesToSave;
+            if (FAR4 == null)
+                bytesToSave = FarcUtils.pullFromFarc(currSHA1[pathCount], FARC);
+            else
+                bytesToSave = FarcUtils.pullFromFAR4(currFileName[pathCount].split("[.]")[0], currSize[pathCount], FAR4);
 
             if (currSHA1.length == 1) outputFile = fileChooser.getSelectedFile();
             else {
@@ -958,13 +978,16 @@ public class MainWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_ExtractRawActionPerformed
 
     private void ExportTEXtoPNGActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportTEXtoPNGActionPerformed
-        if (bigBoy == null) {
-            showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-            return;
-        }
-        if (bigBoyFarc == null) {
-            showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-            return;
+        if (FAR4 == null)
+        {
+            if (MAP == null) {
+                showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
+                return;
+            }
+            if (FARC == null) {
+                showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
+                return;
+            }
         }
         File outputFile;
         String outputFileName;
@@ -994,8 +1017,11 @@ public class MainWindow extends javax.swing.JFrame {
                 continue;
             }
             try {
-                byte[] bytesToSave = FarcUtils.pullFromFarc(currSHA1[pathCount], bigBoyFarc);
-
+                byte[] bytesToSave;
+                if (FAR4 == null)
+                    bytesToSave = FarcUtils.pullFromFarc(currSHA1[pathCount], FARC);
+                else
+                    bytesToSave = FarcUtils.pullFromFAR4(currFileName[pathCount].split("[.]")[0], currSize[pathCount], FAR4);
                 if (currSHA1.length == 1) outputFile = fileChooser.getSelectedFile();
                 else {
                     outputFileName = fileChooser.getSelectedFile().getAbsolutePath();
@@ -1008,11 +1034,7 @@ public class MainWindow extends javax.swing.JFrame {
 
                 byte[] buffer = ZlibUtils.decompressThis(bytesToSave);
                 MiscUtils.DDStoStandard(buffer, "png", outputFile);
-            } catch (DataFormatException ex) {
-                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (NullPointerException ex) {
+            } catch (DataFormatException | IOException | NullPointerException ex) {
                 Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
             }
 
@@ -1021,13 +1043,16 @@ public class MainWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_ExportTEXtoPNGActionPerformed
 
     private void ExportTEXtoDDSActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportTEXtoDDSActionPerformed
-        if (bigBoy == null) {
-            showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-            return;
-        }
-        if (bigBoyFarc == null) {
-            showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-            return;
+        if (FAR4 == null)
+        {
+            if (MAP == null) {
+                showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
+                return;
+            }
+            if (FARC == null) {
+                showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
+                return;
+            }
         }
         File outputFile;
         String outputFileName;
@@ -1057,7 +1082,11 @@ public class MainWindow extends javax.swing.JFrame {
                 continue;
             }
             try {
-                byte[] bytesToSave = ZlibUtils.decompressThis(FarcUtils.pullFromFarc(currSHA1[pathCount], bigBoyFarc));
+                byte[] bytesToSave;
+                if (FAR4 == null)
+                    bytesToSave = ZlibUtils.decompressThis(FarcUtils.pullFromFarc(currSHA1[pathCount], FARC));
+                else
+                    bytesToSave = ZlibUtils.decompressThis(FarcUtils.pullFromFAR4(currFileName[pathCount].split("[.]")[0], currSize[pathCount], FAR4));
 
                 if (currSHA1.length == 1) outputFile = fileChooser.getSelectedFile();
                 else {
@@ -1085,13 +1114,16 @@ public class MainWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_ExportTEXtoDDSActionPerformed
 
     private void ExportTEXtoJPGActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportTEXtoJPGActionPerformed
-        if (bigBoy == null) {
-            showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-            return;
-        }
-        if (bigBoyFarc == null) {
-            showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-            return;
+        if (FAR4 == null)
+        {
+            if (MAP == null) {
+                showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
+                return;
+            }
+            if (FARC == null) {
+                showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
+                return;
+            }
         }
         File outputFile;
         String outputFileName;
@@ -1121,7 +1153,11 @@ public class MainWindow extends javax.swing.JFrame {
                 continue;
             }
             try {
-                byte[] bytesToSave = FarcUtils.pullFromFarc(currSHA1[pathCount], bigBoyFarc);
+                byte[] bytesToSave;
+                if (FAR4 == null)
+                    bytesToSave = FarcUtils.pullFromFarc(currSHA1[pathCount], FARC);
+                else
+                    bytesToSave = FarcUtils.pullFromFAR4(currFileName[pathCount].split("[.]")[0], currSize[pathCount], FAR4);
 
                 if (currSHA1.length == 1) outputFile = fileChooser.getSelectedFile();
                 else {
@@ -1135,11 +1171,7 @@ public class MainWindow extends javax.swing.JFrame {
                 System.out.println("Gonna try extracting now!");
 
                 MiscUtils.DDStoStandard(ZlibUtils.decompressThis(bytesToSave), "jpg", outputFile);
-            } catch (DataFormatException ex) {
-                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (NullPointerException ex) {
+            } catch (DataFormatException | IOException | NullPointerException ex) {
                 Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
             }
 
@@ -1152,8 +1184,8 @@ public class MainWindow extends javax.swing.JFrame {
         System.exit(0);
     }//GEN-LAST:event_ExitActionPerformed
 
-    private void OpenFarcActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenFarcActionPerformed
-        if (bigBoy == null) {
+    private void OpenFARCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenFARCActionPerformed
+        if (MAP == null) {
             showUserDialog("Warning", "Please keep in mind, opening a .FARC file alone will not display anything within farctool2. A .MAP file is required for most functions.");
         }
         fileChooser.setFileFilter(null);
@@ -1180,13 +1212,15 @@ public class MainWindow extends javax.swing.JFrame {
         fileChooser.setAcceptAllFileFilterUsed(true);
         int returnVal = fileChooser.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            bigBoyFarc = fileChooser.getSelectedFile();
-            System.out.println("Sucessfully opened " + bigBoyFarc.getName());
+            FARC = fileChooser.getSelectedFile();
+            System.out.println("Sucessfully opened " + FARC.getName());
+            enableFARCMenus();
+            FAR4 = null;
         }
         fileChooser.removeChoosableFileFilter(ff);
-    }//GEN-LAST:event_OpenFarcActionPerformed
+    }//GEN-LAST:event_OpenFARCActionPerformed
 
-    private void OpenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenActionPerformed
+    private void OpenMAPActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenMAPActionPerformed
         System.out.println("A haiku for the impatient:\n" +
             "Map parsing takes time.\n" +
             "I might freeze, I have not crashed.\n" +
@@ -1214,15 +1248,17 @@ public class MainWindow extends javax.swing.JFrame {
         fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
         int returnVal = fileChooser.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            bigBoy = fileChooser.getSelectedFile();
-            System.out.println("Sucessfully opened " + bigBoy.getName());
+            MAP = fileChooser.getSelectedFile();
+            System.out.println("Sucessfully opened " + MAP.getName());
 
             MapParser self = new MapParser();
-            DefaultMutableTreeNode root = new DefaultMutableTreeNode(bigBoy.getName());
+            DefaultMutableTreeNode root = new DefaultMutableTreeNode(MAP.getName());
             mapTree.setModel(null);
-            DefaultTreeModel model = self.parseMapIntoMemory(root, bigBoy);
+            DefaultTreeModel model = self.parseMapIntoMemory(root, MAP);
 
             mapTree.setModel(model);
+            
+            enableMAPMenus();
 
             //self.loadMap(file);
             //self.printHtml(System.out);
@@ -1230,11 +1266,11 @@ public class MainWindow extends javax.swing.JFrame {
             System.out.println("...nevermind, you cancelled!");
         }
         fileChooser.removeChoosableFileFilter(ff);
-    }//GEN-LAST:event_OpenActionPerformed
+    }//GEN-LAST:event_OpenMAPActionPerformed
 
     private void AddEntryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddEntryActionPerformed
 
-        if (bigBoy == null) {
+        if (MAP == null) {
             showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
             return;
         }
@@ -1243,7 +1279,7 @@ public class MainWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_AddEntryActionPerformed
 
     private void ZeroEntryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ZeroEntryActionPerformed
-        if (bigBoy == null) {
+        if (MAP == null) {
             showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
             return;
         }
@@ -1253,11 +1289,11 @@ public class MainWindow extends javax.swing.JFrame {
             long offset = 0;
             boolean lbp3map = false;
             try {
-                offset = matcher.indexOf(Files.readAllBytes(bigBoy.toPath()), currFileName[pathCount].getBytes());
+                offset = matcher.indexOf(Files.readAllBytes(MAP.toPath()), currFileName[pathCount].getBytes());
             } catch (IOException ex) {
                 Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
             }
-            try (RandomAccessFile mapAccess = new RandomAccessFile(bigBoy, "rw")) {
+            try (RandomAccessFile mapAccess = new RandomAccessFile(MAP, "rw")) {
                 mapAccess.seek(0);
                 if (mapAccess.readInt() == 21496064) lbp3map = true;
                 mapAccess.seek(offset);
@@ -1278,7 +1314,7 @@ public class MainWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_ZeroEntryActionPerformed
 
     private void RemoveEntryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RemoveEntryActionPerformed
-        if (bigBoy == null) {
+        if (MAP == null) {
             showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
             return;
         }
@@ -1293,11 +1329,11 @@ public class MainWindow extends javax.swing.JFrame {
             long offset = 0;
             boolean lbp3map = false;
             try {
-                offset = matcher.indexOf(Files.readAllBytes(bigBoy.toPath()), currFileName[pathCount].getBytes());
+                offset = matcher.indexOf(Files.readAllBytes(MAP.toPath()), currFileName[pathCount].getBytes());
             } catch (IOException ex) {
                 Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
             }
-            try (RandomAccessFile mapAccess = new RandomAccessFile(bigBoy, "rw")) {
+            try (RandomAccessFile mapAccess = new RandomAccessFile(MAP, "rw")) {
                 mapAccess.seek(0);
                 if (mapAccess.readInt() == 21496064) lbp3map = true;
                 mapAccess.seek(offset);
@@ -1356,13 +1392,16 @@ public class MainWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_RemoveEntryActionPerformed
 
     private void ExtractDecompressedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExtractDecompressedActionPerformed
-        if (bigBoy == null) {
-            showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-            return;
-        }
-        if (bigBoyFarc == null) {
-            showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-            return;
+        if (FAR4 == null)
+        {
+            if (MAP == null) {
+                showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
+                return;
+            }
+            if (FARC == null) {
+                showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
+                return;
+            }
         }
         File outputFile;
         String outputFileName;
@@ -1389,7 +1428,10 @@ public class MainWindow extends javax.swing.JFrame {
             if (currFileName[pathCount] == null) continue;
             byte[] bytesToSave = null;
             try {
-                bytesToSave = ZlibUtils.decompressThis(FarcUtils.pullFromFarc(currSHA1[pathCount], bigBoyFarc));
+                if (FAR4 == null)
+                    bytesToSave = ZlibUtils.decompressThis(FarcUtils.pullFromFarc(currSHA1[pathCount], FARC));
+                else
+                    bytesToSave = ZlibUtils.decompressThis(FarcUtils.pullFromFAR4(currFileName[pathCount].split("[.]")[0], currSize[pathCount], FAR4));
             } catch (DataFormatException ex) {
                 Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -1414,7 +1456,7 @@ public class MainWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_ExtractDecompressedActionPerformed
 
     private void ReplaceSelectedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ReplaceSelectedActionPerformed
-        if (bigBoyFarc == null) {
+        if (FARC == null) {
             showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
             return;
         }
@@ -1428,8 +1470,8 @@ public class MainWindow extends javax.swing.JFrame {
             try {
                 File newFile = fileChooser.getSelectedFile();
                 System.out.println("Sucessfully opened " + newFile.getName());
-                System.out.println("Attempting to inject " + newFile.getName() + " into " + bigBoyFarc.getName());
-                FarcUtils.addFile(newFile, bigBoyFarc);
+                System.out.println("Attempting to inject " + newFile.getName() + " into " + FARC.getName());
+                FarcUtils.addFile(newFile, FARC);
                 byte[] SHA1 = MiscUtils.getSHA1(newFile);
                 String fileName = "";
                 for (int pathCount = 0; pathCount < currSHA1.length; pathCount++) {
@@ -1458,7 +1500,7 @@ public class MainWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_ReplaceSelectedActionPerformed
 
     private void AddFileToFARCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddFileToFARCActionPerformed
-        if (bigBoyFarc == null) {
+        if (FARC == null) {
             showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
             return;
         }
@@ -1472,8 +1514,8 @@ public class MainWindow extends javax.swing.JFrame {
             try {
                 File newFile = fileChooser.getSelectedFile();
                 System.out.println("Sucessfully opened " + newFile.getName());
-                System.out.println("Attempting to inject " + newFile.getName() + " into " + bigBoyFarc.getName());
-                FarcUtils.addFile(newFile, bigBoyFarc);
+                System.out.println("Attempting to inject " + newFile.getName() + " into " + FARC.getName());
+                FarcUtils.addFile(newFile, FARC);
             } catch (Exception ex) {
                 Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -1481,11 +1523,11 @@ public class MainWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_AddFileToFARCActionPerformed
 
     private void InstallModActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_InstallModActionPerformed
-        if (bigBoyFarc == null) {
+        if (FARC == null) {
             showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
             return;
         }
-        if (bigBoy == null) {
+        if (MAP == null) {
             showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
             return;
         }
@@ -1521,11 +1563,7 @@ public class MainWindow extends javax.swing.JFrame {
                 String directory = fileChooser.getSelectedFile().getParent() + "/";
 
                 ModInstaller installer = new ModInstaller(mod, directory, this);
-            } catch (ParserConfigurationException ex) {
-                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (SAXException ex) {
-                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
+            } catch (ParserConfigurationException | SAXException | IOException ex) {
                 Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
@@ -1539,24 +1577,24 @@ public class MainWindow extends javax.swing.JFrame {
             try {
                 File newFile = fileChooser.getSelectedFile();
                 MiscUtils.reverseBytes(newFile);
-            } catch (Exception ex) {
+            } catch (IOException ex) {
                 Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }//GEN-LAST:event_ReverseBytesActionPerformed
 
     private void PackagePLANActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PackagePLANActionPerformed
-        if (bigBoyFarc == null) {
+        if (FARC == null) {
             showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
             return;
         }
-        if (bigBoy == null) {
+        if (MAP == null) {
             showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
             return;
         }
         if (!currFileName[0].contains(".plan")) return;
         try {
-            byte[] bytesToRead = FarcUtils.pullFromFarc(currSHA1[0], bigBoyFarc);
+            byte[] bytesToRead = FarcUtils.pullFromFarc(currSHA1[0], FARC);
             ByteArrayInputStream fileAccess = new ByteArrayInputStream(bytesToRead);
             fileAccess.skip(8);
 
@@ -1607,13 +1645,13 @@ public class MainWindow extends javax.swing.JFrame {
             rootElement.setAttributeNode(icon);
             rootElement.setAttributeNode(game);
 
-            byte[] buffer = FarcUtils.pullFromFarc(currSHA1[0], bigBoyFarc);
+            byte[] buffer = FarcUtils.pullFromFarc(currSHA1[0], FARC);
             File fileToPack = new File("mods/" + nameOfNode.substring(0, nameOfNode.length() - 5) + "/files/" + nameOfNode);
             fileToPack.getParentFile().mkdirs();
             fileToPack.createNewFile();
-            FileOutputStream fileToPackStream = new FileOutputStream(fileToPack);
-            fileToPackStream.write(buffer);
-            fileToPackStream.close();
+            try (FileOutputStream fileToPackStream = new FileOutputStream(fileToPack)) {
+                fileToPackStream.write(buffer);
+            }
 
             Element fileNode = doc.createElement("file");
             rootElement.appendChild(fileNode);
@@ -1644,15 +1682,15 @@ public class MainWindow extends javax.swing.JFrame {
 
                     fileAccess.read(dependencyTypeByte);
                     dependencyType = Integer.parseInt(MiscUtils.byteArrayToHexString(dependencyTypeByte), 16);
-                    String fileNameNew = MiscUtils.getFileNameFromGUID(MiscUtils.byteArrayToHexString(dependencyGUIDByte), bigBoy);
-                    String Hash = MiscUtils.getHashFromGUID(MiscUtils.byteArrayToHexString(dependencyGUIDByte), bigBoy);
-                    if (Hash == "NULL")
+                    String fileNameNew = MiscUtils.getFileNameFromGUID(MiscUtils.byteArrayToHexString(dependencyGUIDByte), MAP);
+                    String Hash = MiscUtils.getHashFromGUID(MiscUtils.byteArrayToHexString(dependencyGUIDByte), MAP);
+                    if ("NULL".equals(Hash))
                         continue;
-                    byte[] file = FarcUtils.pullFromFarc(Hash, bigBoyFarc);
+                    byte[] file = FarcUtils.pullFromFarc(Hash, FARC);
                     if (file == null)
                         continue;
                     if (fileNameNew.contains(".gmat")) {
-                        byte[] innerBytesToRead = FarcUtils.pullFromFarc(Hash, bigBoyFarc);
+                        byte[] innerBytesToRead = FarcUtils.pullFromFarc(Hash, FARC);
                         ByteArrayInputStream innerFileAccess = new ByteArrayInputStream(innerBytesToRead);
                         innerFileAccess.skip(8);
 
@@ -1682,11 +1720,11 @@ public class MainWindow extends javax.swing.JFrame {
 
                                 innerFileAccess.read(innerDependencyTypeByte);
                                 innerDependencyType = Integer.parseInt(MiscUtils.byteArrayToHexString(innerDependencyTypeByte), 16);
-                                String innerFileNameNew = MiscUtils.getFileNameFromGUID(MiscUtils.byteArrayToHexString(innerDependencyGUIDByte), bigBoy);
-                                String innerHash = MiscUtils.getHashFromGUID(MiscUtils.byteArrayToHexString(innerDependencyGUIDByte), bigBoy);
-                                if (innerHash == "NULL")
+                                String innerFileNameNew = MiscUtils.getFileNameFromGUID(MiscUtils.byteArrayToHexString(innerDependencyGUIDByte), MAP);
+                                String innerHash = MiscUtils.getHashFromGUID(MiscUtils.byteArrayToHexString(innerDependencyGUIDByte), MAP);
+                                if ("NULL".equals(innerHash))
                                     continue;
-                                byte[] innerFile = FarcUtils.pullFromFarc(innerHash, bigBoyFarc);
+                                byte[] innerFile = FarcUtils.pullFromFarc(innerHash, FARC);
                                 if (innerFile == null)
                                     continue;
                                 System.out.println(innerFileNameNew);
@@ -1697,9 +1735,9 @@ public class MainWindow extends javax.swing.JFrame {
                                     File innerMyFile = new File(innerOutputFileName);
                                     innerMyFile.getParentFile().mkdirs();
                                     innerMyFile.createNewFile();
-                                    FileOutputStream innerOutputFile = new FileOutputStream(innerMyFile);
-                                    innerOutputFile.write(innerFile);
-                                    innerOutputFile.close();
+                                    try (FileOutputStream innerOutputFile = new FileOutputStream(innerMyFile)) {
+                                        innerOutputFile.write(innerFile);
+                                    }
                                 } else {
                                     innerOutputFileName = innerOutputFileName.substring(0, innerOutputFileName.length() - 3) + "png";
                                     ImageIO.write(MiscUtils.DDStoPNG(ZlibUtils.decompressThis(innerFile)), "png", new File(innerOutputFileName));
@@ -1739,9 +1777,9 @@ public class MainWindow extends javax.swing.JFrame {
                         File myFile = new File(outputFileName);
                         myFile.getParentFile().mkdirs();
                         myFile.createNewFile();
-                        FileOutputStream outputFile = new FileOutputStream(myFile);
-                        outputFile.write(file);
-                        outputFile.close();
+                        try (FileOutputStream outputFile = new FileOutputStream(myFile)) {
+                            outputFile.write(file);
+                        }
                     } else {
                         outputFileName = outputFileName.substring(0, outputFileName.length() - 3) + "png";
                         ImageIO.write(MiscUtils.DDStoPNG(ZlibUtils.decompressThis(file)), "png", new File(outputFileName));
@@ -1787,22 +1825,14 @@ public class MainWindow extends javax.swing.JFrame {
             fos.close();
             fis.close();
             System.out.println("Successfully packed .PLAN into a moddable format.");
-        } catch (IOException | NullPointerException ex) {
+        } catch (IOException | NullPointerException | ParserConfigurationException | TransformerException | DataFormatException ex) {
             Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (ParserConfigurationException ex) {
-            Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TransformerConfigurationException ex) {
-            Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TransformerException ex) {
-            Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (DataFormatException ex) {
-            Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        } 
 
     }//GEN-LAST:event_PackagePLANActionPerformed
 
     private void MAPtoRLSTActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MAPtoRLSTActionPerformed
-        if (bigBoy == null) {
+        if (MAP == null) {
             showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
             return;
         }
@@ -1810,7 +1840,7 @@ public class MainWindow extends javax.swing.JFrame {
         try {
             try (
                 // Open the selected file. // 
-                DataInputStream mapAccess = new DataInputStream(new FileInputStream(bigBoy))) {
+                DataInputStream mapAccess = new DataInputStream(new FileInputStream(MAP))) {
 
                 // Initialize Variables // 
                 long begin = System.currentTimeMillis();
@@ -1848,7 +1878,7 @@ public class MainWindow extends javax.swing.JFrame {
                     mapAccess.read(fileNameBytes);
                     fileName = new String(fileNameBytes);
 
-                    if (fileName.contains(".plan") || fileName.contains(".pal"))
+                    if (fileName.contains(".plan"))
                         output += fileName + "\n";
 
                     // Seek 4 bytes if the .MAP originates from LBP1/2. (Padding) //
@@ -1881,6 +1911,113 @@ public class MainWindow extends javax.swing.JFrame {
        OutputTextArea.replaceSelection("");
     }//GEN-LAST:event_ClearActionPerformed
 
+    private void OpenFAR4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenFAR4ActionPerformed
+        showUserDialog("Warning", "The ability to open FAR4 files is very much in development, everything except extracting will be disabled.");
+        fileChooser.setFileFilter(null);
+        fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
+        fileChooser.setAcceptAllFileFilterUsed(true);
+        int returnVal = fileChooser.showOpenDialog(this);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            try {
+                FAR4 = fileChooser.getSelectedFile();
+                System.out.println("Sucessfully opened " + FAR4.getName());
+                try (RandomAccessFile FAR4Access = new RandomAccessFile(FAR4, "rw")) {
+                    FAR4Access.seek(FAR4Access.length() - 8);
+                    int Entries = FAR4Access.readInt();
+                    long TableOffset = (FAR4Access.length() - 28) - (Entries * 28);
+                    FAR4Access.seek(TableOffset);
+                    
+                    long PreviousOffset = TableOffset;
+                    DefaultMutableTreeNode root = new DefaultMutableTreeNode(FAR4.getName());
+                    DefaultTreeModel model = new DefaultTreeModel((DefaultMutableTreeNode) root);
+                    
+                    FAR4Size = new String[Entries];
+                    FAR4SHA1 = new String[Entries];
+                    
+                    for (int i = 0; i < Entries; i++) 
+                    {
+                        String fileHash = "";
+                        for (int j = 0; j < 20; j++)
+                        {
+                            fileHash += String.format("%02X", FAR4Access.readByte());
+                            PreviousOffset += 1;
+                            FAR4Access.seek(PreviousOffset);
+                        }
+                        
+                        FAR4SHA1[i] = fileHash;
+                        
+                        
+                        int Offset;
+                        
+                        Offset = FAR4Access.readInt();
+                        PreviousOffset += 4;
+                        FAR4Access.seek(Offset);
+                        
+                        byte[] Magic = new byte[4];
+                        FAR4Access.read(Magic);
+                        String Extension = new String(Magic, "UTF-8").toLowerCase();
+                        if (Arrays.equals(MiscUtils.hexStringToByteArray("FFD8FFE0"), Magic))
+                            Extension = "jpg";
+                        
+                        FAR4Access.seek(PreviousOffset);
+                        
+                        String fileSize = "";
+                        for (int j = 0; j < 4; j++)
+                        {
+                            fileSize += String.format("%02X", FAR4Access.readByte());
+                            PreviousOffset += 1;
+                            FAR4Access.seek(PreviousOffset);
+                        }
+                        
+                        FAR4Size[i] = fileSize;
+                        
+                        MiscUtils.buildTreeFromString(model, Integer.toHexString(Offset) + "." + Extension);
+                    }
+                    
+                    this.mapTree.setModel(model);
+                    this.mapTree.updateUI();
+                      
+                    FARC = null;
+                    disableFARCMenus();
+                }
+                
+            } catch (FileNotFoundException ex) {
+                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException ex) {
+                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+            }
+ 
+            
+        }
+    }//GEN-LAST:event_OpenFAR4ActionPerformed
+    
+    public void disableFARCMenus()
+    {
+        AddFileToFARC.setEnabled(false);
+        ReplaceSelected.setEnabled(false);
+        AddEntry.setEnabled(false);
+        RemoveEntry.setEnabled(false);
+        ZeroEntry.setEnabled(false);
+        MAPtoRLST.setEnabled(false);
+        InstallMod.setEnabled(false);
+        PackagePLAN.setEnabled(false);
+    }
+    
+    public void enableFARCMenus()
+    {
+        AddFileToFARC.setEnabled(true);
+    }
+    
+    public void enableMAPMenus()
+    {
+        AddEntry.setEnabled(true);
+        ReplaceSelected.setEnabled(true);
+        RemoveEntry.setEnabled(true);
+        ZeroEntry.setEnabled(true);
+        MAPtoRLST.setEnabled(true);
+        InstallMod.setEnabled(true);    
+        PackagePLAN.setEnabled(true);
+    }
 
     public void showUserDialog(String title, String message) {
         if ("Warning".equals(title)) {
@@ -1912,7 +2049,7 @@ public class MainWindow extends javax.swing.JFrame {
                 if (args[0].equals("--dev")) {
                     System.out.println("FARC Tool has been started in Developer Mode, this is intended for testing purposes only.");
                     myWindow.setTitle("FARC Tool 2 | Developer");
-                    myWindow.DeveloperMode = true;
+                    myWindow.developerMode = true;
                     myWindow.DEV.setVisible(true);
                 }
             }
@@ -1938,8 +2075,9 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JMenuItem InstallMod;
     private javax.swing.JMenuItem MAPtoRLST;
     private javax.swing.JScrollPane MapPanel;
-    private javax.swing.JMenuItem Open;
-    private javax.swing.JMenuItem OpenFarc;
+    private javax.swing.JMenuItem OpenFAR4;
+    private javax.swing.JMenuItem OpenFARC;
+    private javax.swing.JMenuItem OpenMAP;
     private javax.swing.JTextArea OutputTextArea;
     private javax.swing.JMenuItem PackagePLAN;
     private javax.swing.JOptionPane PopUpMessage;

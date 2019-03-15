@@ -109,6 +109,7 @@ public class ZlibUtils {
      * 
      * @param input
      * @return
+     * @throws java.util.zip.DataFormatException
      */
     public static byte[] decompressThis(byte[] input) throws DataFormatException {
 
@@ -143,6 +144,7 @@ public class ZlibUtils {
             case "4D534862":
             case "534C5462":
             case "50414C62":
+            case "50434B62":
                     System.out.println("Custom Compression Full Format");
                     return decompressFull(workingFile);
             default:

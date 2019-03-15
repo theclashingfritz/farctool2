@@ -180,7 +180,7 @@ public class EntryAdditionWindow extends javax.swing.JFrame {
         if (!GUID.getText().matches("-?[0-9a-fA-F]+")) return;
         if (!Hash.getText().matches("-?[0-9a-fA-F]+")) return;
         
-        MiscUtils.addEntry(Path.getText(), Hash.getText(), Size.getText(), GUID.getText(), window.bigBoy, window);
+        MiscUtils.addEntry(Path.getText(), Hash.getText(), Size.getText(), GUID.getText(), window.MAP, window);
     }//GEN-LAST:event_AddActionPerformed
 
     /**

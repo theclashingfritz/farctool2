@@ -1,5 +1,6 @@
 package com.philosophofee.farctool2.parsers;
 
+import com.philosophofee.farctool2.utilities.MiscUtils;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -69,11 +70,11 @@ public class MapParser {
         // Skip the rest of the data as it's obtained at a future point in time. //
         mapAccess.skip(32);
         
-        if (fileName.contains(".fsb") || fileName.contains(".farc") || fileName.contains(".sdat") || fileName.contains(".edat") || fileName.contains(".bik") || fileName.contains(".fnt") || fileName.contains(".fev"))
+        if (fileName.contains(".fsb") || fileName.contains(".farc") || fileName.contains(".sdat") || fileName.contains(".edat") || fileName.contains(".bik") || fileName.contains(".fnt") || fileName.contains(".fev") || fileName.equals(""))
             continue;
 
         // Build the node for the JTree. //
-        buildTreeFromString(model, fileName);
+        MiscUtils.buildTreeFromString(model, fileName);
 
     }
     
@@ -86,41 +87,5 @@ public class MapParser {
   } catch (FileNotFoundException ex) {} catch (IOException ex) {}
   
   return model;
- }
-
- public void buildTreeFromString(final DefaultTreeModel model, final String str) {
-  DefaultMutableTreeNode root = (DefaultMutableTreeNode) model.getRoot();
-
-  String[] strings = str.split("/");
-
-  DefaultMutableTreeNode node = root;
-
-  for (String s: strings) {
-   int index = childIndex(node, s);
-
-   if (index < 0) {
-    DefaultMutableTreeNode newChild = new DefaultMutableTreeNode(s);
-    node.insert(newChild, node.getChildCount());
-    node = newChild;
-   } else {
-    node = (DefaultMutableTreeNode) node.getChildAt(index);
-   }
-  }
- }
-
- private int childIndex(final DefaultMutableTreeNode node, final String childValue) {
-  Enumeration < TreeNode > children = node.children();
-  DefaultMutableTreeNode child = null;
-  int index = -1;
-
-  while (children.hasMoreElements() && index < 0) {
-   child = (DefaultMutableTreeNode) children.nextElement();
-
-   if (child.getUserObject() != null && childValue.equals(child.getUserObject())) {
-    index = node.getIndex(child);
-   }
-  }
-
-  return index;
  }
 }

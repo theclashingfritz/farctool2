@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.Formatter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -36,6 +37,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeNode;
 import net.npe.dds.DDSReader;
 import org.riversun.bigdoc.bin.BigFileSearcher;
 
@@ -275,7 +277,7 @@ public static long getLong(byte[] bytes) {
  public static void addEntry(String Path, String Hash, String Size, String GUID, File Map, MainWindow Window)
  {
      Boolean lbp3map = false;   
-     try (RandomAccessFile mapAccess = new RandomAccessFile(Window.bigBoy, "rw"))
+     try (RandomAccessFile mapAccess = new RandomAccessFile(Window.MAP, "rw"))
         {
             mapAccess.seek(0);
             if (mapAccess.readInt() == 21496064) lbp3map = true;
@@ -303,7 +305,7 @@ public static long getLong(byte[] bytes) {
             mapAccess.close();
             
             MapParser parser = new MapParser();
-            parser.buildTreeFromString((DefaultTreeModel) Window.mapTree.getModel(), Path);
+            buildTreeFromString((DefaultTreeModel) Window.mapTree.getModel(), Path);
             ((DefaultTreeModel) Window.mapTree.getModel()).reload((DefaultMutableTreeNode)Window.mapTree.getModel().getRoot());
             Window.mapTree.updateUI();
             
@@ -348,11 +350,11 @@ public static long getLong(byte[] bytes) {
  public static void replaceEntryByGUID(String GUID, String Filename, String Size, String Hash, MainWindow Window)
  {
         Boolean lbp3map = false;
-        long offset = MiscUtils.findGUIDOffset(GUID, Window.bigBoy);
+        long offset = MiscUtils.findGUIDOffset(GUID, Window.MAP);
         try {
         if (offset == 0) return;
             
-            RandomAccessFile map = new RandomAccessFile(Window.bigBoy, "rw");
+            RandomAccessFile map = new RandomAccessFile(Window.MAP, "rw");
             Boolean beginning = false;
         
             offset -= 33;
@@ -423,7 +425,7 @@ public static long getLong(byte[] bytes) {
             deleteNodeFromPath((DefaultMutableTreeNode) (Window.mapTree.getModel().getRoot()), paths, 0);
             
             MapParser parser = new MapParser();
-            parser.buildTreeFromString((DefaultTreeModel) Window.mapTree.getModel(), Filename);
+            buildTreeFromString((DefaultTreeModel) Window.mapTree.getModel(), Filename);
             map.close();
  
         } catch (FileNotFoundException ex) {
@@ -486,5 +488,41 @@ public static long getLong(byte[] bytes) {
     }
     return arr;
 }
+ 
+ public static void buildTreeFromString(final DefaultTreeModel model, final String str) {
+  DefaultMutableTreeNode root = (DefaultMutableTreeNode) model.getRoot();
+
+  String[] strings = str.split("/");
+
+  DefaultMutableTreeNode node = root;
+
+  for (String s: strings) {
+   int index = childIndex(node, s);
+
+   if (index < 0) {
+    DefaultMutableTreeNode newChild = new DefaultMutableTreeNode(s);
+    node.insert(newChild, node.getChildCount());
+    node = newChild;
+   } else {
+    node = (DefaultMutableTreeNode) node.getChildAt(index);
+   }
+  }
+ }
+
+ public static int childIndex(final DefaultMutableTreeNode node, final String childValue) {
+  Enumeration < TreeNode > children = node.children();
+  DefaultMutableTreeNode child = null;
+  int index = -1;
+
+  while (children.hasMoreElements() && index < 0) {
+   child = (DefaultMutableTreeNode) children.nextElement();
+
+   if (child.getUserObject() != null && childValue.equals(child.getUserObject())) {
+    index = node.getIndex(child);
+   }
+  }
+
+  return index;
+ }
 
 }

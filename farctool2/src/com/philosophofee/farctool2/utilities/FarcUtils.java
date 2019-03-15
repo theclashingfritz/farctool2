@@ -132,4 +132,22 @@ public class FarcUtils {
   }
   System.out.println("Successfully injected file into .FARC!");
  }
+  
+  public static byte[] pullFromFAR4(String Offset, String Size, File FAR4)
+  {
+     try {
+         byte[] file;
+         try (RandomAccessFile FAR4Access = new RandomAccessFile(FAR4, "rw")) {
+             FAR4Access.seek(Integer.parseInt(Offset, 16));
+             file = new byte[Integer.parseInt(Size, 16)];
+             FAR4Access.read(file);
+         }
+         return file;
+     } catch (FileNotFoundException ex) {
+         Logger.getLogger(FarcUtils.class.getName()).log(Level.SEVERE, null, ex);
+     } catch (IOException ex) {
+         Logger.getLogger(FarcUtils.class.getName()).log(Level.SEVERE, null, ex);
+     }
+     return null;
+  }
 }

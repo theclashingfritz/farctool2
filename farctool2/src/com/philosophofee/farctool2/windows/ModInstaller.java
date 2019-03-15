@@ -171,10 +171,10 @@ public class ModInstaller extends javax.swing.JFrame {
                     String GUID = element.getAttribute("guid");
                     String Path = element.getElementsByTagName("map").item(0).getTextContent();
 
-                    if (MiscUtils.findGUIDOffset(GUID, window.bigBoy) != -1) MiscUtils.replaceEntryByGUID(GUID, Path, Integer.toString((int)Size), MiscUtils.byteArrayToHexString(SHA1), window);
-                    else MiscUtils.addEntry(Path, MiscUtils.byteArrayToHexString(SHA1), Integer.toString((int) Size), GUID, window.bigBoy, window);
+                    if (MiscUtils.findGUIDOffset(GUID, window.MAP) != -1) MiscUtils.replaceEntryByGUID(GUID, Path, Integer.toString((int)Size), MiscUtils.byteArrayToHexString(SHA1), window);
+                    else MiscUtils.addEntry(Path, MiscUtils.byteArrayToHexString(SHA1), Integer.toString((int) Size), GUID, window.MAP, window);
 
-                    FarcUtils.addFile(newFile, window.bigBoyFarc);
+                    FarcUtils.addFile(newFile, window.FARC);
                     
                     ((DefaultTreeModel) window.mapTree.getModel()).reload((DefaultMutableTreeNode)window.mapTree.getModel().getRoot());
                     window.mapTree.updateUI();
