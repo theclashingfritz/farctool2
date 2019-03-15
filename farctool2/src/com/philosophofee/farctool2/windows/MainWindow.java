@@ -1958,6 +1958,8 @@ public class MainWindow extends javax.swing.JFrame {
                         String Extension = new String(Magic, "UTF-8").toLowerCase();
                         if (Arrays.equals(MiscUtils.hexStringToByteArray("FFD8FFE0"), Magic))
                             Extension = "jpg";
+                        if (Extension.contains("png"))
+                            Extension = "png";
                         
                         FAR4Access.seek(PreviousOffset);
                         
