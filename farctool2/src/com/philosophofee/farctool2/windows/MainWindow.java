@@ -110,7 +110,6 @@ public class MainWindow extends javax.swing.JFrame {
                     continue;
                 }
                 if (mapTree.getSelectionPath().getPathCount() == 1) {
-                    System.out.println("Root");
                     return;
                 }
                 String[] test = new String[selectedPaths[currentTreeNode].getPathCount()];
@@ -361,7 +360,7 @@ public class MainWindow extends javax.swing.JFrame {
         jMenu5 = new javax.swing.JMenu();
         AddFileToFARC = new javax.swing.JMenuItem();
         jSeparator5 = new javax.swing.JPopupMenu.Separator();
-        jMenu1 = new javax.swing.JMenu();
+        ExtractionOptions = new javax.swing.JMenu();
         ExtractRaw = new javax.swing.JMenuItem();
         ExtractDecompressed = new javax.swing.JMenuItem();
         ReplaceSelected = new javax.swing.JMenuItem();
@@ -647,6 +646,7 @@ public class MainWindow extends javax.swing.JFrame {
         FileMenu.add(jMenu4);
 
         FileExportMenu.setText("Export");
+        FileExportMenu.setEnabled(false);
 
         jMenu2.setText(".TEX");
 
@@ -689,9 +689,10 @@ public class MainWindow extends javax.swing.JFrame {
 
         jMenuBar1.add(FileMenu);
 
-        jMenu5.setText("FARC");
+        jMenu5.setText("FAR");
 
         AddFileToFARC.setText("Add Files...");
+        AddFileToFARC.setEnabled(false);
         AddFileToFARC.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AddFileToFARCActionPerformed(evt);
@@ -700,7 +701,8 @@ public class MainWindow extends javax.swing.JFrame {
         jMenu5.add(AddFileToFARC);
         jMenu5.add(jSeparator5);
 
-        jMenu1.setText("Extract Selected...");
+        ExtractionOptions.setText("Extract Selected...");
+        ExtractionOptions.setEnabled(false);
 
         ExtractRaw.setText("Raw");
         ExtractRaw.addActionListener(new java.awt.event.ActionListener() {
@@ -708,7 +710,7 @@ public class MainWindow extends javax.swing.JFrame {
                 ExtractRawActionPerformed(evt);
             }
         });
-        jMenu1.add(ExtractRaw);
+        ExtractionOptions.add(ExtractRaw);
 
         ExtractDecompressed.setText("Decompressed");
         ExtractDecompressed.addActionListener(new java.awt.event.ActionListener() {
@@ -716,11 +718,12 @@ public class MainWindow extends javax.swing.JFrame {
                 ExtractDecompressedActionPerformed(evt);
             }
         });
-        jMenu1.add(ExtractDecompressed);
+        ExtractionOptions.add(ExtractDecompressed);
 
-        jMenu5.add(jMenu1);
+        jMenu5.add(ExtractionOptions);
 
         ReplaceSelected.setText("Replace Selected...");
+        ReplaceSelected.setEnabled(false);
         ReplaceSelected.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ReplaceSelectedActionPerformed(evt);
@@ -733,6 +736,7 @@ public class MainWindow extends javax.swing.JFrame {
         jMenu6.setText("MAP");
 
         AddEntry.setText("Add Entry...");
+        AddEntry.setEnabled(false);
         AddEntry.setFocusCycleRoot(true);
         AddEntry.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -743,6 +747,7 @@ public class MainWindow extends javax.swing.JFrame {
 
         RemoveEntry.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0));
         RemoveEntry.setText("Remove Entry");
+        RemoveEntry.setEnabled(false);
         RemoveEntry.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 RemoveEntryActionPerformed(evt);
@@ -751,6 +756,7 @@ public class MainWindow extends javax.swing.JFrame {
         jMenu6.add(RemoveEntry);
 
         ZeroEntry.setText("Zero Entry");
+        ZeroEntry.setEnabled(false);
         ZeroEntry.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ZeroEntryActionPerformed(evt);
@@ -763,6 +769,7 @@ public class MainWindow extends javax.swing.JFrame {
         jMenu7.setText("Tools");
 
         MAPtoRLST.setText(".RLST from .MAP");
+        MAPtoRLST.setEnabled(false);
         MAPtoRLST.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 MAPtoRLSTActionPerformed(evt);
@@ -772,6 +779,7 @@ public class MainWindow extends javax.swing.JFrame {
 
         PrintDependenciesButton.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_P, java.awt.event.InputEvent.CTRL_MASK));
         PrintDependenciesButton.setText("Print Dependencies");
+        PrintDependenciesButton.setEnabled(false);
         PrintDependenciesButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 PrintDependenciesButtonActionPerformed(evt);
@@ -792,6 +800,7 @@ public class MainWindow extends javax.swing.JFrame {
         jMenu3.setText("Mods");
 
         InstallMod.setText("Install Mod...");
+        InstallMod.setEnabled(false);
         InstallMod.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 InstallModActionPerformed(evt);
@@ -801,6 +810,7 @@ public class MainWindow extends javax.swing.JFrame {
 
         PackagePLAN.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B, java.awt.event.InputEvent.CTRL_MASK));
         PackagePLAN.setText("Package Mod from .PLAN");
+        PackagePLAN.setEnabled(false);
         PackagePLAN.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 PackagePLANActionPerformed(evt);
@@ -1214,8 +1224,12 @@ public class MainWindow extends javax.swing.JFrame {
             FARC = fileChooser.getSelectedFile();
             System.out.println("Sucessfully opened " + FARC.getName());
             enableFARCMenus();
-            enableMAPMenus();
-            FAR4 = null;
+            if (FAR4 != null)
+            {
+                FAR4 = null;
+                this.mapTree.setModel(null);
+                this.mapTree.updateUI();
+            }
         }
         fileChooser.removeChoosableFileFilter(ff);
     }//GEN-LAST:event_OpenFARCActionPerformed
@@ -1258,7 +1272,6 @@ public class MainWindow extends javax.swing.JFrame {
 
             mapTree.setModel(model);
             
-            enableFARCMenus();
             enableMAPMenus();
             FAR4 = null;
 
@@ -2012,22 +2025,47 @@ public class MainWindow extends javax.swing.JFrame {
         MAPtoRLST.setEnabled(false);
         InstallMod.setEnabled(false);
         PackagePLAN.setEnabled(false);
+        PrintDependenciesButton.setEnabled(false);
+        
+        FileExportMenu.setEnabled(true);
+        ExtractionOptions.setEnabled(true);
     }
     
     public void enableFARCMenus()
     {
         AddFileToFARC.setEnabled(true);
+        if (MAP != null)
+            enableSharedMenus();
+        else
+        {
+            FileExportMenu.setEnabled(false);
+            ExtractionOptions.setEnabled(false);
+        }
     }
     
     public void enableMAPMenus()
     {
         AddEntry.setEnabled(true);
-        ReplaceSelected.setEnabled(true);
         RemoveEntry.setEnabled(true);
         ZeroEntry.setEnabled(true);
         MAPtoRLST.setEnabled(true);
+        if (FARC != null)
+            enableSharedMenus();
+        else
+        {
+            FileExportMenu.setEnabled(false);
+            ExtractionOptions.setEnabled(false);
+        }
+    }
+    
+    public void enableSharedMenus()
+    {
+        ReplaceSelected.setEnabled(true);   
+        PrintDependenciesButton.setEnabled(true);
         InstallMod.setEnabled(true);    
         PackagePLAN.setEnabled(true);
+        FileExportMenu.setEnabled(true);
+        ExtractionOptions.setEnabled(true);
     }
 
     public void showUserDialog(String title, String message) {
@@ -2081,6 +2119,7 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JMenuItem ExportTEXtoPNG;
     private javax.swing.JMenuItem ExtractDecompressed;
     private javax.swing.JMenuItem ExtractRaw;
+    private javax.swing.JMenu ExtractionOptions;
     private javax.swing.JMenu FileExportMenu;
     private javax.swing.JMenu FileMenu;
     private javax.swing.JMenu HelpMenu;
@@ -2112,7 +2151,6 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
-    private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu4;

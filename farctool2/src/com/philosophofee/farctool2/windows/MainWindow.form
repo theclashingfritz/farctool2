@@ -209,6 +209,7 @@
             <Menu class="javax.swing.JMenu" name="FileExportMenu">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Export"/>
+                <Property name="enabled" type="boolean" value="false"/>
               </Properties>
               <SubComponents>
                 <Menu class="javax.swing.JMenu" name="jMenu2">
@@ -258,12 +259,13 @@
         </Menu>
         <Menu class="javax.swing.JMenu" name="jMenu5">
           <Properties>
-            <Property name="text" type="java.lang.String" value="FARC"/>
+            <Property name="text" type="java.lang.String" value="FAR"/>
           </Properties>
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="AddFileToFARC">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Add Files..."/>
+                <Property name="enabled" type="boolean" value="false"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="AddFileToFARCActionPerformed"/>
@@ -271,9 +273,10 @@
             </MenuItem>
             <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator5">
             </MenuItem>
-            <Menu class="javax.swing.JMenu" name="jMenu1">
+            <Menu class="javax.swing.JMenu" name="ExtractionOptions">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Extract Selected..."/>
+                <Property name="enabled" type="boolean" value="false"/>
               </Properties>
               <SubComponents>
                 <MenuItem class="javax.swing.JMenuItem" name="ExtractRaw">
@@ -297,6 +300,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="ReplaceSelected">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Replace Selected..."/>
+                <Property name="enabled" type="boolean" value="false"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ReplaceSelectedActionPerformed"/>
@@ -312,6 +316,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="AddEntry">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Add Entry..."/>
+                <Property name="enabled" type="boolean" value="false"/>
                 <Property name="focusCycleRoot" type="boolean" value="true"/>
               </Properties>
               <Events>
@@ -324,6 +329,7 @@
                   <KeyStroke key="DELETE"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="Remove Entry"/>
+                <Property name="enabled" type="boolean" value="false"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="RemoveEntryActionPerformed"/>
@@ -332,6 +338,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="ZeroEntry">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Zero Entry"/>
+                <Property name="enabled" type="boolean" value="false"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ZeroEntryActionPerformed"/>
@@ -347,6 +354,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="MAPtoRLST">
               <Properties>
                 <Property name="text" type="java.lang.String" value=".RLST from .MAP"/>
+                <Property name="enabled" type="boolean" value="false"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="MAPtoRLSTActionPerformed"/>
@@ -358,6 +366,7 @@
                   <KeyStroke key="Ctrl+P"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="Print Dependencies"/>
+                <Property name="enabled" type="boolean" value="false"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="PrintDependenciesButtonActionPerformed"/>
@@ -381,6 +390,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="InstallMod">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Install Mod..."/>
+                <Property name="enabled" type="boolean" value="false"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="InstallModActionPerformed"/>
@@ -392,6 +402,7 @@
                   <KeyStroke key="Ctrl+B"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="Package Mod from .PLAN"/>
+                <Property name="enabled" type="boolean" value="false"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="PackagePLANActionPerformed"/>
