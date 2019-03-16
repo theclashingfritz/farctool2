@@ -1983,6 +1983,7 @@ public class MainWindow extends javax.swing.JFrame {
                     this.mapTree.setModel(model);
                     this.mapTree.updateUI();
                       
+                    MAP = null;
                     FARC = null;
                     disableFARCMenus();
                 }
