@@ -251,7 +251,10 @@ public class MainWindow extends javax.swing.JFrame {
                         currFileName[currFileName.length - 1].contains(".txt") ||
                         currFileName[currFileName.length - 1].contains(".rlst") ||
                         currFileName[currFileName.length - 1].contains(".xml") ||
-                        currFileName[currFileName.length - 1].contains(".cha")
+                        currFileName[currFileName.length - 1].contains(".cha") ||
+                        currFileName[currFileName.length - 1].contains(".edset") ||
+                        currFileName[currFileName.length - 1].contains(".nws") ||
+                        currFileName[currFileName.length - 1].contains(".rlist")
                         ) {
                     //Text file we can read with the text preview pane
                     PreviewLabel.setVisible(false);
