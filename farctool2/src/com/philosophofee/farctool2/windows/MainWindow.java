@@ -351,13 +351,13 @@ public class MainWindow extends javax.swing.JFrame {
         OpenMAP = new javax.swing.JMenuItem();
         OpenFARC = new javax.swing.JMenuItem();
         OpenFAR4 = new javax.swing.JMenuItem();
-        jSeparator6 = new javax.swing.JPopupMenu.Separator();
-        Exit = new javax.swing.JMenuItem();
-        ToolsMenu = new javax.swing.JMenu();
+        FileExportMenu = new javax.swing.JMenu();
         jMenu2 = new javax.swing.JMenu();
         ExportTEXtoPNG = new javax.swing.JMenuItem();
         ExportTEXtoJPG = new javax.swing.JMenuItem();
         ExportTEXtoDDS = new javax.swing.JMenuItem();
+        jSeparator6 = new javax.swing.JPopupMenu.Separator();
+        Exit = new javax.swing.JMenuItem();
         jMenu5 = new javax.swing.JMenu();
         AddFileToFARC = new javax.swing.JMenuItem();
         jSeparator5 = new javax.swing.JPopupMenu.Separator();
@@ -645,22 +645,10 @@ public class MainWindow extends javax.swing.JFrame {
         jMenu4.add(OpenFAR4);
 
         FileMenu.add(jMenu4);
-        FileMenu.add(jSeparator6);
 
-        Exit.setText("Exit");
-        Exit.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ExitActionPerformed(evt);
-            }
-        });
-        FileMenu.add(Exit);
+        FileExportMenu.setText("Export");
 
-        jMenuBar1.add(FileMenu);
-
-        ToolsMenu.setText("Export");
-        ToolsMenu.setToolTipText("");
-
-        jMenu2.setText("Export .TEX");
+        jMenu2.setText(".TEX");
 
         ExportTEXtoPNG.setText(".PNG");
         ExportTEXtoPNG.addActionListener(new java.awt.event.ActionListener() {
@@ -686,9 +674,20 @@ public class MainWindow extends javax.swing.JFrame {
         });
         jMenu2.add(ExportTEXtoDDS);
 
-        ToolsMenu.add(jMenu2);
+        FileExportMenu.add(jMenu2);
 
-        jMenuBar1.add(ToolsMenu);
+        FileMenu.add(FileExportMenu);
+        FileMenu.add(jSeparator6);
+
+        Exit.setText("Exit");
+        Exit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ExitActionPerformed(evt);
+            }
+        });
+        FileMenu.add(Exit);
+
+        jMenuBar1.add(FileMenu);
 
         jMenu5.setText("FARC");
 
@@ -2082,6 +2081,7 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JMenuItem ExportTEXtoPNG;
     private javax.swing.JMenuItem ExtractDecompressed;
     private javax.swing.JMenuItem ExtractRaw;
+    private javax.swing.JMenu FileExportMenu;
     private javax.swing.JMenu FileMenu;
     private javax.swing.JMenu HelpMenu;
     private javax.swing.JMenuItem InstallMod;
@@ -2102,7 +2102,6 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JSplitPane RightHandStuff;
     private javax.swing.JScrollPane TextPrevScroll;
     private javax.swing.JTextArea TextPreview;
-    private javax.swing.JMenu ToolsMenu;
     private javax.swing.JPanel ToolsPanel;
     private javax.swing.JPanel ToolsPanel2;
     private javax.swing.JMenuItem ZeroEntry;
