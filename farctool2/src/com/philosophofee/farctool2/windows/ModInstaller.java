@@ -7,7 +7,6 @@ package com.philosophofee.farctool2.windows;
 
 import com.philosophofee.farctool2.utilities.FarcUtils;
 import com.philosophofee.farctool2.utilities.MiscUtils;
-import java.awt.GraphicsEnvironment;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,17 +17,10 @@ import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-import javax.xml.parsers.ParserConfigurationException;
-import static jdk.internal.joptsimple.internal.Messages.message;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-import static sun.util.calendar.CalendarUtils.mod;
-import java.awt.Font;
-import java.awt.FontFormatException;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 

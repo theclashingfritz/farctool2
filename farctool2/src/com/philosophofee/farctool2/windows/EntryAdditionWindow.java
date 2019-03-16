@@ -10,7 +10,6 @@ import com.philosophofee.farctool2.utilities.FarcUtils;
 import com.philosophofee.farctool2.utilities.MiscUtils;
 import java.io.File;
 import java.util.ArrayList;
-import javax.swing.AbstractListModel;
 import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
