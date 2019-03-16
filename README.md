@@ -8,21 +8,24 @@ farctool2 is a program I wrote for two reasons:
 farctool2 is the sequel to the original farctool, which was written in Game Maker 8.0.
 
 # Features
- - Supports loading of .farc and .map files from every LBP game.
- - Supports texture viewing from every LBP game except LBP Vita. (Planned - for now use this: http://forum.xentax.com/viewtopic.php?p=139837&sid=f273e4c12cf5ce94f7f147626b117bd3#p139837)
- - Supports extraction of any compressed data file from LBP game.
+ - Supports the loading of the FAR4, FARC, and MAP formats from the LittleBigPlanet games.
+ - Supports texture viewing from every LBP game (excluding certain SDF types) except LBP Vita. 
+   (Planned - For now use this: http://forum.xentax.com/viewtopic.php?p=139837&sid=f273e4c12cf5ce94f7f147626b117bd3#p139837)
+ - Supports extracting textures in 3 different formats: PNG, JPG, and DDS.
+ - Supports extraction of any file as-is or decompressed.
+ - Features adding files to the FARC.
+ - Features adding, replacing, deleting, and zeroing entries from the MAP.
+ - Features the ability to build packages from PLANs for ease of modding.
+ - Features the ability to install said packages to any FARC and MAP.
  - Hex viewer (ft. Sporst)
  - Plaintext viewer for text-based files.
  - Supports dumping dependency list of LBP assets with reverse-lookup on GUIDs to filenames.
 
 # Planned
  - LBP Vita GXT texture viewing. 
- - Decompression and recompression of any file in the game.
- - Farc building.
  - Level editor.
  - Model viewer and exporter.
  - General Material (GMAT) viewer.
- - .plan generator (LBP1 ONLY) for music and costume pieces.
  - Model importer.
  
 # Disclaimer
