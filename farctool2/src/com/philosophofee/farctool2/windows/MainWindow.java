@@ -125,7 +125,7 @@ public class MainWindow extends javax.swing.JFrame {
                     }
                 }
                 
-                if (finalString.contains(".") && FARC != null && FAR4 == null) {
+                if (finalString.contains(".") && FAR4 == null) {
                     //System.out.println("You currently have selected " + finalString); //this is annoying
                     currFileName[currentTreeNode] = finalString;
                     EditorPanel.setValueAt(finalString, 0, 1);
