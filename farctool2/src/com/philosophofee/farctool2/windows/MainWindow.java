@@ -229,7 +229,7 @@ public class MainWindow extends javax.swing.JFrame {
             if ((FARC != null || FAR4 != null)&& selectedPaths.length != 0 && currFileName[0] != null) {
                 PreviewLabel.setVisible(true);
                 PreviewLabel.setIcon(null);
-                PreviewLabel.setText("No preview available");
+                PreviewLabel.setText("No preview available :(");
                 TextPrevScroll.setVisible(false);
                 TextPreview.setVisible(false);
                 
@@ -977,7 +977,7 @@ public class MainWindow extends javax.swing.JFrame {
                 System.out.println(outputFileName);
                 outputFile = new File(outputFileName);
             }
-            System.out.println("Gonna try extracting now!");
+            System.out.println("Attempting to extract now!");
 
             try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 fos.write(bytesToSave);
@@ -1039,7 +1039,7 @@ public class MainWindow extends javax.swing.JFrame {
                     System.out.println(outputFileName);
                     outputFile = new File(outputFileName);
                 }
-                System.out.println("Gonna try extracting now!");
+                System.out.println("Attempting to extract now!");
 
                 byte[] buffer = ZlibUtils.decompressThis(bytesToSave);
                 MiscUtils.DDStoStandard(buffer, "png", outputFile);
@@ -1106,7 +1106,7 @@ public class MainWindow extends javax.swing.JFrame {
                     System.out.println(outputFileName);
                     outputFile = new File(outputFileName);
                 }
-                System.out.println("Gonna try extracting now!");
+                System.out.println("Attemping to extract now!");
 
                 FileOutputStream fos = new FileOutputStream(outputFile);
                 fos.write(bytesToSave);
@@ -1177,7 +1177,7 @@ public class MainWindow extends javax.swing.JFrame {
                     System.out.println(outputFileName);
                     outputFile = new File(outputFileName);
                 }
-                System.out.println("Gonna try extracting now!");
+                System.out.println("Attempting to extract now!");
 
                 MiscUtils.DDStoStandard(ZlibUtils.decompressThis(bytesToSave), "jpg", outputFile);
             } catch (DataFormatException | IOException | NullPointerException ex) {
@@ -1462,7 +1462,7 @@ public class MainWindow extends javax.swing.JFrame {
                 System.out.println(outputFileName);
                 outputFile = new File(outputFileName);
             }
-            System.out.println("Gonna try extracting now!");
+            System.out.println("Attempting to extract now!");
 
             try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 fos.write(bytesToSave);

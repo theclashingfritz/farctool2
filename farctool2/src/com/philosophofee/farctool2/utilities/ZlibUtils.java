@@ -97,7 +97,7 @@ public class ZlibUtils {
                 finale = outputStream.toByteArray();
                 //Done!
             }
-            System.out.println("...done");
+            System.out.println("Operation complete!");
             return finale;
 
         } catch (IOException | DataFormatException e) {}
@@ -124,16 +124,16 @@ public class ZlibUtils {
         String header = MiscUtils.getHeaderHexString(workingFile);
         switch (header) {
             case "54455820":
-                System.out.println("Tex file");
+                System.out.println("Format: TEX File");
                 return decompressTex(workingFile);
             case "47544620":
-                System.out.println("GTF file");
+                System.out.println("Format: GTF File");
                 return decompressGTF(workingFile);
             case "47544673":
-                System.out.println("PS Vita GTF Swizzled (GXT) (Simple Header) - Not yet implemented");
+                System.out.println("Format: PS Vita GTF Swizzled (GXT) (Simple Header) - Not yet implemented");
                 break;
             case "47544653":
-                System.out.println("PS Vita GTF Swizzled (GXT) (Extended Header) - Not yet implemented");
+                System.out.println("Format: PS Vita GTF Swizzled (GXT) (Extended Header) - Not yet implemented");
                 break;
             case "504C4E62":
             case "414E4D62":
@@ -147,7 +147,7 @@ public class ZlibUtils {
             case "534C5462":
             case "50414C62":
             case "50434B62":
-                    System.out.println("Custom Compression Full Format");
+                    System.out.println("Format: Custom Compression Full");
                     return decompressFull(workingFile, header);
             default:
                 System.out.println("Not implemented");
@@ -175,7 +175,7 @@ public class ZlibUtils {
                 fileAccess.seek(seek);
                 //Read stream count
                 streamCnt = fileAccess.readShort();
-                System.out.println("Processing " + streamCnt + "zlib streams...");
+                System.out.println("Processing " + streamCnt + " Zlib streams...");
                 //Read streams
                 int[] unc = new int[streamCnt];
                 int[] com = new int[streamCnt];
@@ -213,7 +213,7 @@ public class ZlibUtils {
             try (FileOutputStream fos = new FileOutputStream("temp_prev_tex")) {
                 fos.write(finale);
             }
-            System.out.println("...done");
+            System.out.println("Operation complete!");
             return finale;
 
         } catch (IOException | DataFormatException e) {}
@@ -266,8 +266,8 @@ public class ZlibUtils {
             for (int i2 = 0; i2 < 2; i2++) {
                 widthHex += String.format("%02X", fileAccess.readByte());
             }
-            System.out.println("Width in hex: " + widthHex);
-            System.out.println("Width in hex (lil endian): " + MiscUtils.convertShortHexStringToLittleEndian(widthHex));
+            System.out.println("Width in HEX: " + widthHex);
+            System.out.println("Width in HEX (Little Endian): " + MiscUtils.convertShortHexStringToLittleEndian(widthHex));
 
 
             //2 bytes height
@@ -278,8 +278,8 @@ public class ZlibUtils {
             for (int i2 = 0; i2 < 2; i2++) {
                 heightHex += String.format("%02X", fileAccess.readByte());
             }
-            System.out.println("Height in hex: " + heightHex);
-            System.out.println("Height in hex (lil endian): " + MiscUtils.convertShortHexStringToLittleEndian(heightHex));
+            System.out.println("Height in HEX: " + heightHex);
+            System.out.println("Height in HEX (Little Endian): " + MiscUtils.convertShortHexStringToLittleEndian(heightHex));
 
 
             try (FileOutputStream fos = new FileOutputStream("temp_prev_tex")) {
@@ -306,7 +306,7 @@ public class ZlibUtils {
                 seek = 30;
                 fileAccess.seek(seek);
                 streamCnt = fileAccess.readShort();
-                System.out.println("Processing " + streamCnt + "zlib streams...");
+                System.out.println("Processing " + streamCnt + " Zlib streams...");
                 //Read streams
                 int[] unc = new int[streamCnt];
                 int[] com = new int[streamCnt];
@@ -316,11 +316,11 @@ public class ZlibUtils {
                     seek += 2;
                     fileAccess.seek(seek);
                     com[i] = Math.abs(fileAccess.readShort());
-                    System.out.println("stream " + (i+1) + " compressed size: " + com[i]);
+                    System.out.println("Stream " + (i+1) + " compressed size: " + com[i]);
                     seek += 2;
                     fileAccess.seek(seek);
                     unc[i] = Math.abs(fileAccess.readShort());
-                    System.out.println("stream " + (i+1) + " uncompressed size: " + unc[i]);
+                    System.out.println("Stream " + (i+1) + " uncompressed size: " + unc[i]);
                     fullSize += unc[i];
                 } //Now we start piecing together the decompressed file
                 seek += 2;

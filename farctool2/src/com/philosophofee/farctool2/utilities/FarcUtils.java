@@ -40,7 +40,7 @@ public class FarcUtils {
   BigFileSearcher searcher = new BigFileSearcher();
   long fileTableOffset = searcher.indexOf(bigBoyFarc, MiscUtils.hexStringToByteArray(currSHA1), tableOffset);
   if (fileTableOffset == -1) {
-   System.out.println("This SHA1 isn't in the farc, dummy!");
+   System.out.println("This SHA1 isn't in the FARC, I feel like I'm going to cry...");
    return null;
   }
   //System.out.println("entry position in table: " + fileTableOffset);
@@ -55,22 +55,22 @@ public class FarcUtils {
    //go to the file table, and grab the hash for verification later
    farcAccess.seek(fileTableOffset);
    farcAccess.readFully(newSHA1);
-   System.out.println("entry SHA1 in farc: " + MiscUtils.byteArrayToHexString(newSHA1));
+   System.out.println("Entry SHA1 (FARC): " + MiscUtils.byteArrayToHexString(newSHA1).toUpperCase());
 
    //seek past the sha1 and grab the offset to know where to extract the file
    farcAccess.seek(fileTableOffset + 20);
    byte bytes[] = new byte[8];
    farcAccess.read(bytes, 4, 4);
    newFileOffset = MiscUtils.getLong(bytes);
-   System.out.println("entry offset: " + newFileOffset);
+   System.out.println("Entry offset: " + newFileOffset);
 
    //get file size so we can know how much data to pull later
    farcAccess.seek(fileTableOffset + 24);
    newFileSize = farcAccess.readInt();
-   System.out.println("entry size: " + newFileSize);
+   System.out.println("Entry size: " + newFileSize);
 
 
-   System.out.println("Gonna try extracting now!");
+   System.out.println("Attempting to extract now!");
    long begin = System.currentTimeMillis();
    FileInputStream fin = new FileInputStream(bigBoyFarc);
    fin.skip(newFileOffset);
