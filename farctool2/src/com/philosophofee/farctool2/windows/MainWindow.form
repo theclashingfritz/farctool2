@@ -281,7 +281,7 @@
               <SubComponents>
                 <MenuItem class="javax.swing.JMenuItem" name="ExtractRaw">
                   <Properties>
-                    <Property name="text" type="java.lang.String" value="Raw"/>
+                    <Property name="text" type="java.lang.String" value="As-is"/>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ExtractRawActionPerformed"/>
@@ -297,15 +297,30 @@
                 </MenuItem>
               </SubComponents>
             </Menu>
-            <MenuItem class="javax.swing.JMenuItem" name="ReplaceSelected">
+            <Menu class="javax.swing.JMenu" name="ReplaceSelectedOptions">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Replace Selected..."/>
                 <Property name="enabled" type="boolean" value="false"/>
               </Properties>
-              <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ReplaceSelectedActionPerformed"/>
-              </Events>
-            </MenuItem>
+              <SubComponents>
+                <MenuItem class="javax.swing.JMenuItem" name="ReplaceSelected">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="As-is"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ReplaceSelectedActionPerformed"/>
+                  </Events>
+                </MenuItem>
+                <MenuItem class="javax.swing.JMenuItem" name="ReplaceDecompressed">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Decompressed"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ReplaceDecompressedActionPerformed"/>
+                  </Events>
+                </MenuItem>
+              </SubComponents>
+            </Menu>
           </SubComponents>
         </Menu>
         <Menu class="javax.swing.JMenu" name="jMenu6">

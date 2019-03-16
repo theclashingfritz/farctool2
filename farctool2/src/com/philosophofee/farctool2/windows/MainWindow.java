@@ -10,6 +10,7 @@ import com.philosophofee.farctool2.utilities.ZlibUtils;
 import com.philosophofee.farctool2.utilities.FarcUtils;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,6 +27,7 @@ import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
@@ -367,7 +369,9 @@ public class MainWindow extends javax.swing.JFrame {
         ExtractionOptions = new javax.swing.JMenu();
         ExtractRaw = new javax.swing.JMenuItem();
         ExtractDecompressed = new javax.swing.JMenuItem();
+        ReplaceSelectedOptions = new javax.swing.JMenu();
         ReplaceSelected = new javax.swing.JMenuItem();
+        ReplaceDecompressed = new javax.swing.JMenuItem();
         jMenu6 = new javax.swing.JMenu();
         AddEntry = new javax.swing.JMenuItem();
         RemoveEntry = new javax.swing.JMenuItem();
@@ -708,7 +712,7 @@ public class MainWindow extends javax.swing.JFrame {
         ExtractionOptions.setText("Extract Selected...");
         ExtractionOptions.setEnabled(false);
 
-        ExtractRaw.setText("Raw");
+        ExtractRaw.setText("As-is");
         ExtractRaw.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ExtractRawActionPerformed(evt);
@@ -726,14 +730,26 @@ public class MainWindow extends javax.swing.JFrame {
 
         jMenu5.add(ExtractionOptions);
 
-        ReplaceSelected.setText("Replace Selected...");
-        ReplaceSelected.setEnabled(false);
+        ReplaceSelectedOptions.setText("Replace Selected...");
+        ReplaceSelectedOptions.setEnabled(false);
+
+        ReplaceSelected.setText("As-is");
         ReplaceSelected.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ReplaceSelectedActionPerformed(evt);
             }
         });
-        jMenu5.add(ReplaceSelected);
+        ReplaceSelectedOptions.add(ReplaceSelected);
+
+        ReplaceDecompressed.setText("Decompressed");
+        ReplaceDecompressed.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ReplaceDecompressedActionPerformed(evt);
+            }
+        });
+        ReplaceSelectedOptions.add(ReplaceDecompressed);
+
+        jMenu5.add(ReplaceSelectedOptions);
 
         jMenuBar1.add(jMenu5);
 
@@ -2018,11 +2034,127 @@ public class MainWindow extends javax.swing.JFrame {
             
         }
     }//GEN-LAST:event_OpenFAR4ActionPerformed
+
+    private void ReplaceDecompressedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ReplaceDecompressedActionPerformed
+        if (FARC == null) {
+            showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
+            return;
+        }
+        
+        if (currSHA1.length != 1)
+        {
+            showUserDialog("Warning", "This function can only be used with one file at a time to prevent errors.");
+            return;
+        }
+
+        fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
+        fileChooser.setFileFilter(null);
+        fileChooser.setFileFilter(fileChooser.getAcceptAllFileFilter());
+        int returnVal = fileChooser.showOpenDialog(this);
+
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            try {
+                File newFile = fileChooser.getSelectedFile();
+                FileInputStream Stream = new FileInputStream(newFile);
+                byte[] fileToCompress = Stream.readAllBytes();
+                Stream.close();
+                System.out.println("Sucessfully opened " + newFile.getName());
+                System.out.println("Attempting to inject " + newFile.getName() + " into " + FARC.getName());
+                File workingFile = new File("temp");
+                switch (MiscUtils.getHeaderHexString(workingFile))
+                {
+                    case "504C4E62":
+                    case "414E4D62":
+                    case "42455662":
+                    case "4C564C62":
+                    case "434C4462":
+                    case "46534862":
+                    case "474D5462":
+                    case "4F415462":
+                    case "4D534862":
+                    case "534C5462":
+                    case "50414C62":
+                    case "50434B62":
+                        System.out.println("Format: Custom Compression Full");
+                        break;
+                    default:
+                        System.out.println("Not implemented | Not a valid file type");
+                        return;
+                }
+                
+                int UncompressedSize = fileToCompress.length;
+                
+                Deflater deflater = new Deflater();
+                deflater.setInput(fileToCompress);
+                
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream(fileToCompress.length);
+                
+                deflater.finish();
+                byte[] buffer = new byte[1024];
+                while (!deflater.finished())
+                {
+                    int count = deflater.deflate(buffer);
+                    outputStream.write(buffer, 0, count);
+                }
+                outputStream.close();
+                byte[] compressedFile = outputStream.toByteArray();
+                int CompressedSize = compressedFile.length;
+                
+                
+                int seek = 8;
+                FileInputStream fis = new FileInputStream("temp");
+                FileOutputStream fos = new FileOutputStream("tempc");
+                fos.write(fis.readAllBytes());
+                fis.close();
+                fos.close();
+                
+                RandomAccessFile fileAccess = new RandomAccessFile("tempc", "rw");
+                //Skip header
+                
+                seek = 8;
+                fileAccess.seek(seek);
+                int dependencyOffset =  fileAccess.readInt();
+                
+                fileAccess.seek(dependencyOffset);
+                byte[] dependencies = new byte[(int) (fileAccess.length() - dependencyOffset)];
+                fileAccess.read(dependencies);
+                
+                seek = 12;
+                fileAccess.seek(seek);
+                
+                short type = fileAccess.readShort();
+                
+                if (type == 256) seek += 3;
+                else seek += 8;
+                
+                fileAccess.seek(seek);
+                fileAccess.write(MiscUtils.hexStringToByteArray("0001"));
+                fileAccess.writeShort(CompressedSize);
+                fileAccess.writeShort(UncompressedSize);
+                fileAccess.write(compressedFile);
+                dependencyOffset = (int) fileAccess.getFilePointer();
+                fileAccess.write(dependencies);
+                
+                fileAccess.seek(8);
+                fileAccess.writeInt(dependencyOffset);
+                fileAccess.close();
+               
+                File tempc = new File("tempc");
+                FarcUtils.addFile(tempc, FARC);
+                MiscUtils.replaceEntryByGUID(currGUID[0], currFileName[0], Integer.toString((int) compressedFile.length), MiscUtils.byteArrayToHexString(MiscUtils.getSHA1(tempc)), this);
+                
+            } catch (Exception ex) {
+                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            ((DefaultTreeModel) mapTree.getModel()).reload((DefaultMutableTreeNode) mapTree.getModel().getRoot());
+            mapTree.updateUI();
+        }        
+    }//GEN-LAST:event_ReplaceDecompressedActionPerformed
     
     public void disableFARCMenus()
     {
         AddFileToFARC.setEnabled(false);
-        ReplaceSelected.setEnabled(false);
+        ReplaceSelectedOptions.setEnabled(false);
         AddEntry.setEnabled(false);
         RemoveEntry.setEnabled(false);
         ZeroEntry.setEnabled(false);
@@ -2064,7 +2196,7 @@ public class MainWindow extends javax.swing.JFrame {
     
     public void enableSharedMenus()
     {
-        ReplaceSelected.setEnabled(true);   
+        ReplaceSelectedOptions.setEnabled(true);   
         PrintDependenciesButton.setEnabled(true);
         InstallMod.setEnabled(true);    
         PackagePLAN.setEnabled(true);
@@ -2140,7 +2272,9 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JPanel PreviewPanel;
     private javax.swing.JMenuItem PrintDependenciesButton;
     private javax.swing.JMenuItem RemoveEntry;
+    private javax.swing.JMenuItem ReplaceDecompressed;
     private javax.swing.JMenuItem ReplaceSelected;
+    private javax.swing.JMenu ReplaceSelectedOptions;
     private javax.swing.JMenuItem ReverseBytes;
     private javax.swing.JSplitPane RightHandStuff;
     private javax.swing.JScrollPane TextPrevScroll;
