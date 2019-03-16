@@ -692,7 +692,7 @@ public class MainWindow extends javax.swing.JFrame {
 
         jMenu5.setText("FARC");
 
-        AddFileToFARC.setText("Add File...");
+        AddFileToFARC.setText("Add Files...");
         AddFileToFARC.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AddFileToFARCActionPerformed(evt);
@@ -1512,18 +1512,23 @@ public class MainWindow extends javax.swing.JFrame {
         fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
         fileChooser.setFileFilter(null);
         fileChooser.setFileFilter(fileChooser.getAcceptAllFileFilter());
+        fileChooser.setMultiSelectionEnabled(true);
         int returnVal = fileChooser.showOpenDialog(this);
 
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             try {
-                File newFile = fileChooser.getSelectedFile();
-                System.out.println("Sucessfully opened " + newFile.getName());
-                System.out.println("Attempting to inject " + newFile.getName() + " into " + FARC.getName());
-                FarcUtils.addFile(newFile, FARC);
+                File[] newFiles = fileChooser.getSelectedFiles();
+                for (int i = 0; i < newFiles.length; i++)
+                {
+                    System.out.println("Sucessfully opened " + newFiles[i].getName());
+                    System.out.println("Attempting to inject " + newFiles[i].getName() + " into " + FARC.getName());
+                    FarcUtils.addFile(newFiles[i], FARC);   
+                }
             } catch (Exception ex) {
                 Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+        fileChooser.setMultiSelectionEnabled(false);
     }//GEN-LAST:event_AddFileToFARCActionPerformed
 
     private void InstallModActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_InstallModActionPerformed

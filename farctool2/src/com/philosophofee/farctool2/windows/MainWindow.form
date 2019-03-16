@@ -264,7 +264,7 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="AddFileToFARC">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Add File..."/>
+                <Property name="text" type="java.lang.String" value="Add Files..."/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="AddFileToFARCActionPerformed"/>
