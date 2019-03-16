@@ -526,17 +526,4 @@ public static long getLong(byte[] bytes) {
 
   return index;
  }
- 
- public static void clear(ArrayList MyArrayList)
- {
-     for (int i = 0; i < MyArrayList.size(); i++)
-         MyArrayList.remove(i);
- }
- 
-  public static void clear(DefaultListModel MyArrayList)
- {
-     for (int i = 0; i < MyArrayList.size(); i++)
-         MyArrayList.remove(i);
- }
-
 }

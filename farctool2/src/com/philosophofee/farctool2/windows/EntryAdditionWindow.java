@@ -303,8 +303,8 @@ public class EntryAdditionWindow extends javax.swing.JFrame {
                 FarcUtils.addFile(entry.FileToAdd, Window.FARC);
         }
         Window.showUserDialog("Success!", "Entries successfully added!");
-        MiscUtils.clear(Entries);
-        MiscUtils.clear(TableEntries);
+        Entries.clear();
+        TableEntries.clear();
     }//GEN-LAST:event_AddEntriesActionPerformed
 
     private void ManualAddEntryToTableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ManualAddEntryToTableActionPerformed
