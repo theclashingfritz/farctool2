@@ -27,12 +27,14 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Formatter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
+import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -274,7 +276,7 @@ public static long getLong(byte[] bytes) {
   return digest.digest();
  }
  
- public static void addEntry(String Path, String Hash, String Size, String GUID, File Map, MainWindow Window)
+ public static void addEntry(String Path, String Hash, String Size, String GUID, MainWindow Window)
  {
      Boolean lbp3map = false;   
      try (RandomAccessFile mapAccess = new RandomAccessFile(Window.MAP, "rw"))
@@ -523,6 +525,18 @@ public static long getLong(byte[] bytes) {
   }
 
   return index;
+ }
+ 
+ public static void clear(ArrayList MyArrayList)
+ {
+     for (int i = 0; i < MyArrayList.size(); i++)
+         MyArrayList.remove(i);
+ }
+ 
+  public static void clear(DefaultListModel MyArrayList)
+ {
+     for (int i = 0; i < MyArrayList.size(); i++)
+         MyArrayList.remove(i);
  }
 
 }

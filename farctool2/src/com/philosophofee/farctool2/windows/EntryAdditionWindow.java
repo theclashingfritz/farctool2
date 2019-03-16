@@ -5,27 +5,16 @@
  */
 package com.philosophofee.farctool2.windows;
 
-import com.philosophofee.farctool2.parsers.MapParser;
+import com.philosophofee.farctool2.utilities.Entry;
+import com.philosophofee.farctool2.utilities.FarcUtils;
 import com.philosophofee.farctool2.utilities.MiscUtils;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.ByteBuffer;
-import java.util.Date;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.io.File;
+import java.util.ArrayList;
+import javax.swing.AbstractListModel;
+import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-import javax.swing.plaf.basic.BasicLookAndFeel;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
 
 /**
  *
@@ -34,18 +23,22 @@ import javax.swing.tree.DefaultTreeModel;
 public class EntryAdditionWindow extends javax.swing.JFrame {
 
     /**
-     * Creates new form EntryAdditionWindow
+     * Creates new form EntryAdditionWindowPreview
      */
-    public MainWindow window;
-    public EntryAdditionWindow(MainWindow window) {
+    
+    public MainWindow Window;
+    public File SelectedFile;
+    public ArrayList Entries = new ArrayList<Entry>();
+    public DefaultListModel TableEntries = new DefaultListModel<String>();
+    
+    public EntryAdditionWindow(MainWindow Window) {
         initComponents();
+        if (Window.FARC == null) this.FFFARC.setEnabled(false);
         setTitle("Entry Adder");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setIconImage(new ImageIcon(getClass().getResource("resources/farctool2_icon.png")).getImage());
-        setLocationRelativeTo(null);
-        this.window = window;
-
-     
+        this.Window = Window;
+        
     }
 
     private EntryAdditionWindow() {
@@ -61,84 +54,172 @@ public class EntryAdditionWindow extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jScrollPane1 = new javax.swing.JScrollPane();
+        EntryList = new javax.swing.JList<>();
+        jTabbedPane1 = new javax.swing.JTabbedPane();
         jPanel1 = new javax.swing.JPanel();
-        GUID = new javax.swing.JTextField();
-        Path = new javax.swing.JTextField();
-        Add = new javax.swing.JButton();
-        Size = new javax.swing.JTextField();
-        Hash = new javax.swing.JTextField();
+        FFFilePath = new javax.swing.JTextField();
+        FFGUID = new javax.swing.JTextField();
+        FFFARC = new javax.swing.JCheckBox();
+        FFFileSelect = new javax.swing.JButton();
+        FFAddEntry = new javax.swing.JButton();
+        FFFileSelected = new javax.swing.JLabel();
+        jPanel2 = new javax.swing.JPanel();
+        ManualFilePath = new javax.swing.JTextField();
+        ManualSize = new javax.swing.JTextField();
+        ManualGUID = new javax.swing.JTextField();
+        ManualSHA1 = new javax.swing.JTextField();
+        ManualAddEntryToTable = new javax.swing.JButton();
+        RemoveSelectedEntry = new javax.swing.JButton();
+        AddEntries = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setResizable(false);
 
-        jPanel1.setName("Entry Adder"); // NOI18N
+        EntryList.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        EntryList.setModel(TableEntries);
+        EntryList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        EntryList.setToolTipText("");
+        EntryList.setFixedCellWidth(10);
+        jScrollPane1.setViewportView(EntryList);
 
-        GUID.setText("GUID");
-        GUID.addActionListener(new java.awt.event.ActionListener() {
+        FFFilePath.setText("File Path");
+
+        FFGUID.setText("GUID");
+
+        FFFARC.setText("FARC");
+        FFFARC.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                GUIDActionPerformed(evt);
+                FFFARCActionPerformed(evt);
             }
         });
 
-        Path.setText("File Path");
-        Path.addActionListener(new java.awt.event.ActionListener() {
+        FFFileSelect.setText("Select File...");
+        FFFileSelect.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                PathActionPerformed(evt);
+                FFFileSelectActionPerformed(evt);
             }
         });
 
-        Add.setText("Add!");
-        Add.addActionListener(new java.awt.event.ActionListener() {
+        FFAddEntry.setText("Add Entry to Table");
+        FFAddEntry.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                AddActionPerformed(evt);
+                FFAddEntryActionPerformed(evt);
             }
         });
 
-        Size.setText("Size");
-        Size.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                SizeActionPerformed(evt);
-            }
-        });
-
-        Hash.setText("SHA1 Hash");
-        Hash.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                HashActionPerformed(evt);
-            }
-        });
+        FFFileSelected.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        FFFileSelected.setText("No File Selected.");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addContainerGap(15, Short.MAX_VALUE)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(Hash, javax.swing.GroupLayout.PREFERRED_SIZE, 239, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(Path, javax.swing.GroupLayout.PREFERRED_SIZE, 239, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(FFFileSelected, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(FFFilePath)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(GUID, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(Size, javax.swing.GroupLayout.PREFERRED_SIZE, 101, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(FFGUID)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(Add, javax.swing.GroupLayout.PREFERRED_SIZE, 57, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addGap(18, 18, 18))
+                        .addComponent(FFFARC, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(4, 4, 4))
+                    .addComponent(FFAddEntry, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 190, Short.MAX_VALUE)
+                    .addComponent(FFFileSelect, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(20, 20, 20)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE, false)
-                    .addComponent(GUID)
-                    .addComponent(Size)
-                    .addComponent(Add, javax.swing.GroupLayout.PREFERRED_SIZE, 24, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap()
+                .addComponent(FFFilePath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(Path, javax.swing.GroupLayout.PREFERRED_SIZE, 24, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(FFGUID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(FFFARC, javax.swing.GroupLayout.PREFERRED_SIZE, 22, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(Hash, javax.swing.GroupLayout.PREFERRED_SIZE, 24, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(24, Short.MAX_VALUE))
+                .addComponent(FFFileSelect)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(FFFileSelected, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(FFAddEntry)
+                .addGap(33, 33, 33))
         );
+
+        jTabbedPane1.addTab("From File", jPanel1);
+
+        ManualFilePath.setText("File Path");
+        ManualFilePath.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ManualFilePathActionPerformed(evt);
+            }
+        });
+
+        ManualSize.setText("Size");
+        ManualSize.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ManualSizeActionPerformed(evt);
+            }
+        });
+
+        ManualGUID.setText("GUID");
+
+        ManualSHA1.setText("SHA1 Hash");
+
+        ManualAddEntryToTable.setText("Add Entry to Table");
+        ManualAddEntryToTable.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ManualAddEntryToTableActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(ManualFilePath)
+                    .addComponent(ManualSHA1)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(ManualSize, javax.swing.GroupLayout.PREFERRED_SIZE, 92, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(ManualGUID, javax.swing.GroupLayout.DEFAULT_SIZE, 92, Short.MAX_VALUE))
+                    .addComponent(ManualAddEntryToTable, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(ManualFilePath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(ManualGUID)
+                    .addComponent(ManualSize))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(ManualSHA1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(ManualAddEntryToTable)
+                .addContainerGap(64, Short.MAX_VALUE))
+        );
+
+        jTabbedPane1.addTab("Manual", jPanel2);
+
+        RemoveSelectedEntry.setText("Remove Selected Entry");
+        RemoveSelectedEntry.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RemoveSelectedEntryActionPerformed(evt);
+            }
+        });
+
+        AddEntries.setText("Add Entries to MAP!");
+        AddEntries.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                AddEntriesActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -146,42 +227,91 @@ public class EntryAdditionWindow extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addContainerGap())
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(RemoveSelectedEntry, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(AddEntries, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jTabbedPane1)
+                    .addComponent(jScrollPane1))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(AddEntries, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(RemoveSelectedEntry, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void GUIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GUIDActionPerformed
+    private void ManualFilePathActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ManualFilePathActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_GUIDActionPerformed
+    }//GEN-LAST:event_ManualFilePathActionPerformed
 
-    private void PathActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PathActionPerformed
+    private void ManualSizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ManualSizeActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_PathActionPerformed
+    }//GEN-LAST:event_ManualSizeActionPerformed
 
-    private void SizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SizeActionPerformed
+    private void FFFARCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FFFARCActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_SizeActionPerformed
+    }//GEN-LAST:event_FFFARCActionPerformed
 
-    private void HashActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_HashActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_HashActionPerformed
+    private void FFFileSelectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FFFileSelectActionPerformed
+        Window.fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
+        Window.fileChooser.setFileFilter(null);
+        Window.fileChooser.setFileFilter(Window.fileChooser.getAcceptAllFileFilter());
+        int returnVal = Window.fileChooser.showOpenDialog(this);
 
-    private void AddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddActionPerformed
-        if (Path.getText().isEmpty()) return;
-        if (Path.getText().substring(Path.getText().lastIndexOf(".") + 1).isEmpty()) return;
-        if (!Size.getText().matches("-?[0-9a-fA-F]+")) return;
-        if (!GUID.getText().matches("-?[0-9a-fA-F]+")) return;
-        if (!Hash.getText().matches("-?[0-9a-fA-F]+")) return;
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = Window.fileChooser.getSelectedFile();
+            SelectedFile = selectedFile;
+            FFFileSelected.setText(SelectedFile.getName());
+            
+        }
+    }//GEN-LAST:event_FFFileSelectActionPerformed
+
+    private void FFAddEntryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FFAddEntryActionPerformed
+        Entry newEntry = new Entry(FFFilePath.getText(), FFGUID.getText(), SelectedFile, FFFARC.isSelected());
+        Entries.add(newEntry);
+        TableEntries.addElement(newEntry.Path);
         
-        MiscUtils.addEntry(Path.getText(), Hash.getText(), Size.getText(), GUID.getText(), window.MAP, window);
-    }//GEN-LAST:event_AddActionPerformed
+    }//GEN-LAST:event_FFAddEntryActionPerformed
+
+    private void RemoveSelectedEntryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RemoveSelectedEntryActionPerformed
+        int Index = EntryList.getSelectedIndex();
+        TableEntries.remove(Index);
+        Entries.remove(Index);
+    }//GEN-LAST:event_RemoveSelectedEntryActionPerformed
+
+    private void AddEntriesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddEntriesActionPerformed
+        for (int i = 0; i < Entries.size(); i++)
+        {
+            Entry entry = (Entry) Entries.get(i);
+            MiscUtils.addEntry(entry.Path, entry.SHA1, entry.Size, entry.GUID, Window);
+            if (entry.AddToFARC)
+                FarcUtils.addFile(entry.FileToAdd, Window.FARC);
+        }
+        Window.showUserDialog("Success!", "Entries successfully added!");
+        MiscUtils.clear(Entries);
+        MiscUtils.clear(TableEntries);
+    }//GEN-LAST:event_AddEntriesActionPerformed
+
+    private void ManualAddEntryToTableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ManualAddEntryToTableActionPerformed
+        Entry newEntry = new Entry(ManualFilePath.getText(), ManualSHA1.getText(), ManualSize.getText(), ManualGUID.getText());
+        Entries.add(newEntry);
+        TableEntries.addElement(newEntry.Path);
+    }//GEN-LAST:event_ManualAddEntryToTableActionPerformed
 
     /**
      * @param args the command line arguments
@@ -209,21 +339,34 @@ public class EntryAdditionWindow extends javax.swing.JFrame {
             java.util.logging.Logger.getLogger(EntryAdditionWindow.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
+        //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                    new EntryAdditionWindow().setVisible(true);
+                new EntryAdditionWindow().setVisible(true);
             }
         });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton Add;
-    private javax.swing.JTextField GUID;
-    private javax.swing.JTextField Hash;
-    private javax.swing.JTextField Path;
-    private javax.swing.JTextField Size;
+    private javax.swing.JButton AddEntries;
+    private javax.swing.JList<String> EntryList;
+    private javax.swing.JButton FFAddEntry;
+    private javax.swing.JCheckBox FFFARC;
+    private javax.swing.JTextField FFFilePath;
+    private javax.swing.JButton FFFileSelect;
+    private javax.swing.JLabel FFFileSelected;
+    private javax.swing.JTextField FFGUID;
+    private javax.swing.JButton ManualAddEntryToTable;
+    private javax.swing.JTextField ManualFilePath;
+    private javax.swing.JTextField ManualGUID;
+    private javax.swing.JTextField ManualSHA1;
+    private javax.swing.JTextField ManualSize;
+    private javax.swing.JButton RemoveSelectedEntry;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTabbedPane jTabbedPane1;
     // End of variables declaration//GEN-END:variables
 }

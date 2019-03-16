@@ -1215,6 +1215,7 @@ public class MainWindow extends javax.swing.JFrame {
             FARC = fileChooser.getSelectedFile();
             System.out.println("Sucessfully opened " + FARC.getName());
             enableFARCMenus();
+            enableMAPMenus();
             FAR4 = null;
         }
         fileChooser.removeChoosableFileFilter(ff);
@@ -1258,7 +1259,9 @@ public class MainWindow extends javax.swing.JFrame {
 
             mapTree.setModel(model);
             
+            enableFARCMenus();
             enableMAPMenus();
+            FAR4 = null;
 
             //self.loadMap(file);
             //self.printHtml(System.out);
@@ -1318,6 +1321,7 @@ public class MainWindow extends javax.swing.JFrame {
             showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
             return;
         }
+        
         for (int pathCount = 0; pathCount < currFileName.length; pathCount++) {
             if (currFileName[pathCount] == null) continue;
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) selectedPaths[pathCount].getLastPathComponent();
@@ -2097,7 +2101,7 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JPanel ToolsPanel2;
     private javax.swing.JMenuItem ZeroEntry;
     private javax.swing.JFrame aboutWindow;
-    private javax.swing.JFileChooser fileChooser;
+    public javax.swing.JFileChooser fileChooser;
     private tv.porst.jhexview.JHexView hexViewer;
     private javax.swing.JFrame jFrame1;
     private javax.swing.JLabel jLabel1;
