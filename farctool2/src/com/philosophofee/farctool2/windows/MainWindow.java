@@ -254,7 +254,8 @@ public class MainWindow extends javax.swing.JFrame {
                         currFileName[currFileName.length - 1].contains(".cha") ||
                         currFileName[currFileName.length - 1].contains(".edset") ||
                         currFileName[currFileName.length - 1].contains(".nws") ||
-                        currFileName[currFileName.length - 1].contains(".rlist")
+                        currFileName[currFileName.length - 1].contains(".rlist") ||
+                        currFileName[currFileName.length - 1].contains("sph")
                         ) {
                     //Text file we can read with the text preview pane
                     PreviewLabel.setVisible(false);
