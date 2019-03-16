@@ -48,7 +48,7 @@ Custom Compression Texture Format // Compresses files in 32 KiB slices, .tex Mag
 */
 public class ZlibUtils {
 
-    public static byte[] decompressFull(File input) {
+    public static byte[] decompressFull(File input, String header) {
         int seek = 0;
         int streamCount = 0;
         try {
@@ -57,11 +57,12 @@ public class ZlibUtils {
             try ( //Set up access file
                 RandomAccessFile fileAccess = new RandomAccessFile(input, "rw")) {
                 //Skip header
-                seek += 20;
+                if (header.equals("4D534862")) seek += 15;
+                else seek += 20;
                 fileAccess.seek(seek);
                 
                 streamCount = fileAccess.readShort();
-                System.out.println("Processing " + streamCount + "zlib streams...");
+                System.out.println("Processing " + streamCount + " Zlib streams...");
                 //Read streams
                 int[] unc = new int[streamCount];
                 int[] com = new int[streamCount];
@@ -120,7 +121,8 @@ public class ZlibUtils {
         } catch (IOException ex) {}
 
         File workingFile = new File("temp");
-        switch (MiscUtils.getHeaderHexString(workingFile)) {
+        String header = MiscUtils.getHeaderHexString(workingFile);
+        switch (header) {
             case "54455820":
                 System.out.println("Tex file");
                 return decompressTex(workingFile);
@@ -146,7 +148,7 @@ public class ZlibUtils {
             case "50414C62":
             case "50434B62":
                     System.out.println("Custom Compression Full Format");
-                    return decompressFull(workingFile);
+                    return decompressFull(workingFile, header);
             default:
                 System.out.println("Not implemented");
                 return input;
