@@ -2144,7 +2144,7 @@ public class MainWindow extends javax.swing.JFrame {
                
                 File tempc = new File("tempc");
                 FarcUtils.addFile(tempc, FARC);
-                MiscUtils.replaceEntryByGUID(currGUID[0], currFileName[0], Integer.toHexString((int) compressedFile.length), MiscUtils.byteArrayToHexString(MiscUtils.getSHA1(tempc)), this);
+                MiscUtils.replaceEntryByGUID(currGUID[0], currFileName[0], Integer.toHexString((int) tempc.length()), MiscUtils.byteArrayToHexString(MiscUtils.getSHA1(tempc)), this);
                 
             } catch (Exception ex) {
                 Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
