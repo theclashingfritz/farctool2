@@ -309,6 +309,12 @@ public static long getLong(byte[] bytes) {
  public static long findGUIDOffset(String GUID, File map)
  {
    try {
+        RandomAccessFile myMap = new RandomAccessFile(map, "rw");
+        myMap.seek(myMap.length() - 4);
+        int GUIDQuestion = myMap.readInt();
+        myMap.close();
+        if (MiscUtils.leftPad(Integer.toHexString(GUIDQuestion), 8).equals(GUID))
+            return (long) (map.length() - 4);
         KMPMatch matcher = new KMPMatch();
         long offset = matcher.indexOf(Files.readAllBytes(map.toPath()), MiscUtils.hexStringToByteArray(MiscUtils.leftPad(GUID + "00", 10)));
         return offset;
@@ -343,12 +349,18 @@ public static long getLong(byte[] bytes) {
         Boolean lbp3map = false;
         long offset = MiscUtils.findGUIDOffset(GUID, Window.MAP);
         try {
-        if (offset == 0) return;
+        if (offset == -1) return;
             
+        
             RandomAccessFile map = new RandomAccessFile(Window.MAP, "rw");
             Boolean beginning = false;
+            
+            map.seek(0);
+            if (map.readInt() == 21496064) lbp3map = true;
         
-            offset -= 33;
+            if (lbp3map) offset -= 28;
+            else offset -= 32;
+            
             while(!beginning)
             {
                 offset -= 1;
@@ -361,10 +373,6 @@ public static long getLong(byte[] bytes) {
                     beginning = true;
             }
             offset++;  
-            
-
-            map.seek(0);
-            if (map.readInt() == 21496064) lbp3map = true;
            
             byte[] prev = new byte[(int) offset];
             map.seek(0);
@@ -373,16 +381,18 @@ public static long getLong(byte[] bytes) {
             map.seek(offset);
 
             int length = map.readByte();
+            offset++;
             
             byte[] fileName = new byte[length];
             map.read(fileName);
+           
             
             String oldName = new String(fileName, "UTF-8");
             
             offset += length;
             
-            if (lbp3map) offset += 34;
-            else offset += 40;
+            if (lbp3map) offset += 32;
+            else offset += 36;
             
             map.seek(offset);
             
