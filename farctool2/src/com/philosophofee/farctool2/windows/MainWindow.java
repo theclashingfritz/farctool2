@@ -229,84 +229,91 @@ public class MainWindow extends javax.swing.JFrame {
             
             
             if ((FARC != null || FAR4 != null)&& selectedPaths.length != 0 && currFileName[0] != null) {
-                PreviewLabel.setVisible(true);
-                PreviewLabel.setIcon(null);
-                PreviewLabel.setText("No preview available :(");
-                TextPrevScroll.setVisible(false);
-                TextPreview.setVisible(false);
-                
-                byte[] workWithData = null;
-                if (FAR4 != null)
-                    workWithData = FarcUtils.pullFromFAR4(currFileName[currFileName.length - 1].split("[.]")[0], currSize[currFileName.length - 1], FAR4);
-                else 
-                    workWithData = FarcUtils.pullFromFarc(currSHA1[currFileName.length - 1], FARC);
-                if (workWithData == null) {
-                    System.out.println("As a result, I wasn't able to preview anything...");
-                    hexViewer.setData(null);
-                    hexViewer.setDefinitionStatus(DefinitionStatus.UNDEFINED);
-                    hexViewer.setEnabled(false);
-                    return;
-                }
-                if (
-                        workWithData[3] == 0x74 ||
-                        currFileName[currFileName.length - 1].contains(".nws") ||
-                        currFileName[currFileName.length - 1].contains(".txt") ||
-                        currFileName[currFileName.length - 1].contains(".rlst") ||
-                        currFileName[currFileName.length - 1].contains(".xml") ||
-                        currFileName[currFileName.length - 1].contains(".cha") ||
-                        currFileName[currFileName.length - 1].contains(".edset") ||
-                        currFileName[currFileName.length - 1].contains(".nws") ||
-                        currFileName[currFileName.length - 1].contains(".rlist") ||
-                        currFileName[currFileName.length - 1].contains("sph")
-                        ) {
-                    //Text file we can read with the text preview pane
-                    PreviewLabel.setVisible(false);
-                    TextPrevScroll.setVisible(true);
-                    TextPreview.setVisible(true);
-                    TextPreview.setText(new String(workWithData));
-                    TextPreview.setCaretPosition(0);
-                }
-                if (currFileName[currFileName.length - 1].contains(".tex")) {
-                    try {
-                        ZlibUtils.decompressThis(workWithData);
-                        PreviewLabel.setVisible(true);
-                        TextPrevScroll.setVisible(false);
-                        TextPreview.setVisible(false);
-                        PreviewLabel.setText(null);
-                        PreviewLabel.setIcon(MiscUtils.createDDSIcon("temp_prev_tex"));
-                    } catch (DataFormatException | IOException ex) {
-                        Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+                FileOutputStream fos = null;
+                try {
+                    PreviewLabel.setVisible(true);
+                    PreviewLabel.setIcon(null);
+                    PreviewLabel.setText("No preview available :(");
+                    TextPrevScroll.setVisible(false);
+                    TextPreview.setVisible(false);
+                    byte[] workWithData = null;
+                    if (FAR4 != null)
+                        workWithData = FarcUtils.pullFromFAR4(currFileName[currFileName.length - 1].split("[.]")[0], currSize[currFileName.length - 1], FAR4);
+                    else
+                        workWithData = FarcUtils.pullFromFarc(currSHA1[currFileName.length - 1], FARC);
+                    if (workWithData == null) {
+                        System.out.println("As a result, I wasn't able to preview anything...");
+                        hexViewer.setData(null);
+                        hexViewer.setDefinitionStatus(DefinitionStatus.UNDEFINED);
+                        hexViewer.setEnabled(false);
+                        return;
                     }
-                }
-                
-                if (currFileName[currFileName.length - 1].contains(".png") || currFileName[currFileName.length - 1].contains(".jpg")) {
-                    try {
-                        try (InputStream in = new ByteArrayInputStream(workWithData)) {
-                            BufferedImage image = ImageIO.read( in );
+                    else 
+                    {
+                        try {
+                            fos = new FileOutputStream(new File("temp"));
+                        } catch (FileNotFoundException ex) {
+                            Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                        fos.write(workWithData);
+                        fos.close();
+                    }
+                    if (
+                            workWithData[3] == 0x74 ||
+                            currFileName[currFileName.length - 1].contains(".nws") ||
+                            currFileName[currFileName.length - 1].contains(".txt") ||
+                            currFileName[currFileName.length - 1].contains(".rlst") ||
+                            currFileName[currFileName.length - 1].contains(".xml") ||
+                            currFileName[currFileName.length - 1].contains(".cha") ||
+                            currFileName[currFileName.length - 1].contains(".edset") ||
+                            currFileName[currFileName.length - 1].contains(".nws") ||
+                            currFileName[currFileName.length - 1].contains(".rlist") ||
+                            currFileName[currFileName.length - 1].contains("sph")
+                            ) {
+                        //Text file we can read with the text preview pane
+                        PreviewLabel.setVisible(false);
+                        TextPrevScroll.setVisible(true);
+                        TextPreview.setVisible(true);
+                        TextPreview.setText(new String(workWithData));
+                        TextPreview.setCaretPosition(0);
+                    }   if (currFileName[currFileName.length - 1].contains(".tex")) {
+                        try {
+                            ZlibUtils.decompressThis(workWithData);
                             PreviewLabel.setVisible(true);
                             TextPrevScroll.setVisible(false);
                             TextPreview.setVisible(false);
                             PreviewLabel.setText(null);
-                            PreviewLabel.setIcon(MiscUtils.getScaledImage(image));
+                            PreviewLabel.setIcon(MiscUtils.createDDSIcon("temp_prev_tex"));
+                        } catch (DataFormatException | IOException ex) {
+                            Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
                         }
-                    } catch (IOException ex) {
-                        Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+                    }   if (currFileName[currFileName.length - 1].contains(".png") || currFileName[currFileName.length - 1].contains(".jpg")) {
+                        try {
+                            try (InputStream in = new ByteArrayInputStream(workWithData)) {
+                                BufferedImage image = ImageIO.read( in );
+                                PreviewLabel.setVisible(true);
+                                TextPrevScroll.setVisible(false);
+                                TextPreview.setVisible(false);
+                                PreviewLabel.setText(null);
+                                PreviewLabel.setIcon(MiscUtils.getScaledImage(image));
+                            }
+                        } catch (IOException ex) {
+                            Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                        
+                    }   if (currFileName[currFileName.length - 1].contains(".dds")) {
+                        PreviewLabel.setVisible(true);
+                        TextPrevScroll.setVisible(false);
+                        TextPreview.setVisible(false);
+                        PreviewLabel.setText(null);
+                        PreviewLabel.setIcon(MiscUtils.createImageIconFromDDS(workWithData));
                     }
-
+                    hexViewer.setData(new SimpleDataProvider(workWithData));
+                    hexViewer.setDefinitionStatus(DefinitionStatus.DEFINED);
+                    hexViewer.setEnabled(true);
+                } catch (IOException ex) {
+                    Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                
-                if (currFileName[currFileName.length - 1].contains(".dds")) {
-                    PreviewLabel.setVisible(true);
-                    TextPrevScroll.setVisible(false);
-                    TextPreview.setVisible(false);
-                    PreviewLabel.setText(null);
-                    PreviewLabel.setIcon(MiscUtils.createImageIconFromDDS(workWithData));
-                }
-                
-                
-                hexViewer.setData(new SimpleDataProvider(workWithData));
-                hexViewer.setDefinitionStatus(DefinitionStatus.DEFINED);
-                hexViewer.setEnabled(true);
                 
             }
         });
