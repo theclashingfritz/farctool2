@@ -347,7 +347,6 @@ public static long getLong(byte[] bytes) {
  public static void replaceEntryByGUID(String GUID, String Filename, String Size, String Hash, MainWindow Window)
  {
         Boolean lbp3map = false;
-        System.out.println(Size);
         long offset = MiscUtils.findGUIDOffset(GUID, Window.MAP);
         try {
         if (offset == -1) return;
