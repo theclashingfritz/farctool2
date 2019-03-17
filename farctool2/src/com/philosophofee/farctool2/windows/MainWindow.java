@@ -1527,7 +1527,7 @@ public class MainWindow extends javax.swing.JFrame {
                         }
                     }
                     System.out.println(currGUID[pathCount]);
-                    MiscUtils.replaceEntryByGUID(currGUID[pathCount], fileName, Integer.toString((int) newFile.length()), MiscUtils.byteArrayToHexString(SHA1), this);
+                    MiscUtils.replaceEntryByGUID(currGUID[pathCount], fileName, Integer.toHexString((int) newFile.length()), MiscUtils.byteArrayToHexString(SHA1), this);
                 }
                 System.out.println("File successfully replaced!");
             } catch (Exception ex) {
@@ -2144,7 +2144,7 @@ public class MainWindow extends javax.swing.JFrame {
                
                 File tempc = new File("tempc");
                 FarcUtils.addFile(tempc, FARC);
-                MiscUtils.replaceEntryByGUID(currGUID[0], currFileName[0], Integer.toString((int) compressedFile.length), MiscUtils.byteArrayToHexString(MiscUtils.getSHA1(tempc)), this);
+                MiscUtils.replaceEntryByGUID(currGUID[0], currFileName[0], Integer.toHexString((int) compressedFile.length), MiscUtils.byteArrayToHexString(MiscUtils.getSHA1(tempc)), this);
                 
             } catch (Exception ex) {
                 Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);

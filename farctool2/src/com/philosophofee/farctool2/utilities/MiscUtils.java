@@ -347,6 +347,7 @@ public static long getLong(byte[] bytes) {
  public static void replaceEntryByGUID(String GUID, String Filename, String Size, String Hash, MainWindow Window)
  {
         Boolean lbp3map = false;
+        System.out.println(Size);
         long offset = MiscUtils.findGUIDOffset(GUID, Window.MAP);
         try {
         if (offset == -1) return;
@@ -418,8 +419,6 @@ public static long getLong(byte[] bytes) {
             map.write(MiscUtils.hexStringToByteArray(MiscUtils.leftPad(Size, 8)));
             map.write(MiscUtils.hexStringToByteArray(MiscUtils.leftPad(Hash, 40)));
             map.write(MiscUtils.hexStringToByteArray(MiscUtils.leftPad(GUID, 8)));
-            if (!lastFile && lbp3map) map.write(new byte[1]);
-            else if (!lastFile && !lbp3map) map.write(new byte[3]);
             map.write(buffer);
             
             String[] paths = oldName.split("/");
