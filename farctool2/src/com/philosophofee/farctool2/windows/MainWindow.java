@@ -1377,8 +1377,8 @@ public class MainWindow extends javax.swing.JFrame {
                 mapAccess.seek(0);
                 byte prev[] = new byte[(int) offset - 1];
                 mapAccess.read(prev);
-
-                Boolean lastEntry = mapAccess.length() - (offset + currFileName[pathCount].length()) == 32;
+                
+                Boolean lastEntry = mapAccess.length() - (offset + currFileName[pathCount].length()) == 36;
 
                 byte next[] = null;
                 if (!lastEntry) {
@@ -1405,6 +1405,9 @@ public class MainWindow extends javax.swing.JFrame {
 
                 mapAccess.seek(4);
                 mapAccess.writeInt(entries);
+                
+                if (lastEntry)
+                    mapAccess.setLength(mapAccess.length() - 3);
 
                 mapAccess.close();
 
