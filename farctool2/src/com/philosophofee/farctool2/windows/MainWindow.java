@@ -380,6 +380,8 @@ public class MainWindow extends javax.swing.JFrame {
         ExportTEXtoDDS = new javax.swing.JMenuItem();
         ExportMAPOptions = new javax.swing.JMenu();
         MAPtoRLST = new javax.swing.JMenuItem();
+        PLANExportOptions = new javax.swing.JMenu();
+        PackagePLAN = new javax.swing.JMenuItem();
         jSeparator6 = new javax.swing.JPopupMenu.Separator();
         Exit = new javax.swing.JMenuItem();
         jMenu5 = new javax.swing.JMenu();
@@ -401,7 +403,6 @@ public class MainWindow extends javax.swing.JFrame {
         PrintDependenciesButton = new javax.swing.JMenuItem();
         jMenu3 = new javax.swing.JMenu();
         InstallMod = new javax.swing.JMenuItem();
-        PackagePLAN = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
         jMenuItem2 = new javax.swing.JMenuItem();
         DEV = new javax.swing.JMenu();
@@ -718,6 +719,20 @@ public class MainWindow extends javax.swing.JFrame {
 
         FileExportMenu.add(ExportMAPOptions);
 
+        PLANExportOptions.setText(".PLAN");
+        PLANExportOptions.setEnabled(false);
+
+        PackagePLAN.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B, java.awt.event.InputEvent.CTRL_MASK));
+        PackagePLAN.setText("Mod Package");
+        PackagePLAN.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                PackagePLANActionPerformed(evt);
+            }
+        });
+        PLANExportOptions.add(PackagePLAN);
+
+        FileExportMenu.add(PLANExportOptions);
+
         FileMenu.add(FileExportMenu);
         FileMenu.add(jSeparator6);
 
@@ -855,16 +870,6 @@ public class MainWindow extends javax.swing.JFrame {
             }
         });
         jMenu3.add(InstallMod);
-
-        PackagePLAN.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B, java.awt.event.InputEvent.CTRL_MASK));
-        PackagePLAN.setText("Package Mod from .PLAN");
-        PackagePLAN.setEnabled(false);
-        PackagePLAN.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                PackagePLANActionPerformed(evt);
-            }
-        });
-        jMenu3.add(PackagePLAN);
 
         jMenuBar1.add(jMenu3);
 
@@ -1661,7 +1666,22 @@ public class MainWindow extends javax.swing.JFrame {
    showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
    return;
   }
-  if (!currFileName[0].contains(".plan") && !currFileName[0].contains(".pal") && !currFileName[0].contains(".oft") && !currFileName[0].contains(".ads") && !currFileName[0].contains(".adc") && !currFileName[0].contains(".qst")) return;
+  
+  fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
+  fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+  fileChooser.setFileFilter(null);
+  int returnVal = fileChooser.showSaveDialog(this);
+
+  if (returnVal != JFileChooser.APPROVE_OPTION) {
+   System.out.println("File access cancelled by user.");
+   return;
+  }
+  String selectedDirectory = fileChooser.getSelectedFile().getAbsolutePath().toString() + "\\";
+
+  System.out.println(selectedDirectory);
+  
+  if (!currFileName[0].contains(".plan")) return;
   try {
    byte[] bytesToRead = FarcUtils.pullFromFarc(currSHA1[0], FARC);
    ByteArrayInputStream fileAccess = new ByteArrayInputStream(bytesToRead);
@@ -1715,7 +1735,7 @@ public class MainWindow extends javax.swing.JFrame {
    rootElement.setAttributeNode(game);
 
    byte[] buffer = FarcUtils.pullFromFarc(currSHA1[0], FARC);
-   File fileToPack = new File("mods/" + nameOfNode.substring(0, nameOfNode.length() - 5) + "/files/" + nameOfNode);
+   File fileToPack = new File(selectedDirectory + nameOfNode.substring(0, nameOfNode.length() - 5) + "/files/" + nameOfNode);
    fileToPack.getParentFile().mkdirs();
    fileToPack.createNewFile();
    try (FileOutputStream fileToPackStream = new FileOutputStream(fileToPack)) {
@@ -1797,7 +1817,7 @@ public class MainWindow extends javax.swing.JFrame {
         if (innerFile == null)
          continue;
         System.out.println(innerFileNameNew);
-        String innerOutputFileName = "mods/" + currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1);
+        String innerOutputFileName = selectedDirectory + currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1);
         innerOutputFileName = innerOutputFileName.substring(0, innerOutputFileName.length() - 5) + "/files/" + innerFileNameNew.substring(innerFileNameNew.lastIndexOf("/") + 1);
 
         if (!innerFileNameNew.contains(".tex")) {
@@ -1839,7 +1859,7 @@ public class MainWindow extends javax.swing.JFrame {
      }
 
      System.out.println(fileNameNew);
-     String outputFileName = "mods/" + currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1);
+     String outputFileName = selectedDirectory + currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1);
      outputFileName = outputFileName.substring(0, outputFileName.length() - 5) + "/files/" + fileNameNew.substring(fileNameNew.lastIndexOf("/") + 1);
 
      if (!fileNameNew.contains(".tex")) {
@@ -1882,7 +1902,7 @@ public class MainWindow extends javax.swing.JFrame {
    TransformerFactory transformerFactory = TransformerFactory.newInstance();
    Transformer transformer = transformerFactory.newTransformer();
    DOMSource source = new DOMSource(doc);
-   String outputFileName = "mods/" + currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1);
+   String outputFileName = selectedDirectory + currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1);
    outputFileName = outputFileName.substring(0, outputFileName.length() - 5);
    StreamResult result = new StreamResult(new File(outputFileName + "/mod.xml"));
    transformer.transform(source, result);
@@ -2199,7 +2219,7 @@ public class MainWindow extends javax.swing.JFrame {
   MAPtoRLST.setEnabled(false);
   ExportMAPOptions.setEnabled(false);
   InstallMod.setEnabled(false);
-  PackagePLAN.setEnabled(false);
+  PLANExportOptions.setEnabled(false);
   PrintDependenciesButton.setEnabled(false);
   ExportTEXOptions.setEnabled(true);
 
@@ -2242,7 +2262,7 @@ public class MainWindow extends javax.swing.JFrame {
   ReplaceDecompressed.setEnabled(true);
   PrintDependenciesButton.setEnabled(true);
   InstallMod.setEnabled(true);
-  PackagePLAN.setEnabled(true);
+  PLANExportOptions.setEnabled(true);
   FileExportMenu.setEnabled(true);
   ExtractionOptions.setEnabled(true);
  }
@@ -2311,6 +2331,7 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JMenuItem OpenFARC;
     private javax.swing.JMenuItem OpenMAP;
     private javax.swing.JTextArea OutputTextArea;
+    private javax.swing.JMenu PLANExportOptions;
     private javax.swing.JMenuItem PackagePLAN;
     private javax.swing.JOptionPane PopUpMessage;
     private javax.swing.JLabel PreviewLabel;
