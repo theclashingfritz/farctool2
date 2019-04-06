@@ -546,7 +546,6 @@ public static long getLong(byte[] bytes) {
        int fourthBit = Integer.parseInt(Character.toString(fileGUID.charAt(4)), 16);
        
        StringBuilder builder = new StringBuilder(obfGUID);
-       System.out.println(fourthBit);
        if (fourthBit == 15) builder.setCharAt(3, (char) (builder.charAt(3) - 1));
        else if (nextBit == 15) builder.setCharAt(3, (char) (builder.charAt(3) - 1));
        if (fourthBit > 7 && fourthBit < 15) builder.setCharAt(3, (char) (builder.charAt(3) + 1));

@@ -34,6 +34,7 @@ import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.event.TreeSelectionEvent;
@@ -405,6 +406,7 @@ public class MainWindow extends javax.swing.JFrame {
         InstallMod = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
         jMenuItem2 = new javax.swing.JMenuItem();
+        darkMode = new javax.swing.JCheckBoxMenuItem();
         DEV = new javax.swing.JMenu();
         DEV.setVisible(false);
 
@@ -882,6 +884,15 @@ public class MainWindow extends javax.swing.JFrame {
             }
         });
         HelpMenu.add(jMenuItem2);
+
+        darkMode.setSelected(true);
+        darkMode.setText("Dark Mode");
+        darkMode.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                darkModeActionPerformed(evt);
+            }
+        });
+        HelpMenu.add(darkMode);
 
         jMenuBar1.add(HelpMenu);
 
@@ -2208,6 +2219,34 @@ public class MainWindow extends javax.swing.JFrame {
   }
  }//GEN-LAST:event_ReplaceDecompressedActionPerformed
 
+    private void darkModeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_darkModeActionPerformed
+       if (darkMode.isSelected()) 
+       {
+            BasicLookAndFeel darcula = new DarculaLaf();
+            try {
+                UIManager.setLookAndFeel(darcula);
+            } catch (UnsupportedLookAndFeelException ex) {
+                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+            }
+       }
+       else 
+       {
+           try {
+               UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+           } catch (ClassNotFoundException ex) {
+               Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+           } catch (InstantiationException ex) {
+               Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+           } catch (IllegalAccessException ex) {
+               Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+           } catch (UnsupportedLookAndFeelException ex) {
+               Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+           }
+       }
+       SwingUtilities.updateComponentTreeUI(this);
+       SwingUtilities.updateComponentTreeUI(fileChooser);
+    }//GEN-LAST:event_darkModeActionPerformed
+
  public void disableFARCMenus() {
   AddFileToFARC.setEnabled(false);
   ReplaceSelectedOptions.setEnabled(true);
@@ -2349,6 +2388,7 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JPanel ToolsPanel2;
     private javax.swing.JMenuItem ZeroEntry;
     private javax.swing.JFrame aboutWindow;
+    private javax.swing.JCheckBoxMenuItem darkMode;
     public javax.swing.JFileChooser fileChooser;
     private tv.porst.jhexview.JHexView hexViewer;
     private javax.swing.JFrame jFrame1;
