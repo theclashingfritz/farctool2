@@ -20,9 +20,12 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Formatter;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
@@ -523,4 +526,67 @@ public static long getLong(byte[] bytes) {
 
   return index;
  }
+ 
+ public static String obfuscateGUID(String fileGUID)
+ {
+      int secondByte = Integer.parseInt(fileGUID.substring(2, 4), 16);
+       int thirdByte = Integer.parseInt(fileGUID.substring(4, 6), 16);
+       int fourthByte = Integer.parseInt(fileGUID.substring(6, 8), 16);
+       String obfGUID = "";
+       
+       obfGUID += MiscUtils.leftPad(Integer.toHexString(((fourthByte > 127) ? fourthByte : (fourthByte + 128))), 2);
+       
+       if (thirdByte == 0) obfGUID += "80";
+       else if (thirdByte < 64) obfGUID += MiscUtils.leftPad(Integer.toHexString(((thirdByte * 2) + 128)), 2);
+       else if (thirdByte > 63 && thirdByte < 127) obfGUID += MiscUtils.leftPad(Integer.toHexString(thirdByte * 2), 2);
+       else if (thirdByte > 127 && thirdByte < 192) obfGUID += MiscUtils.leftPad(Integer.toHexString(((thirdByte * 2) - 128)), 2);
+       else if (thirdByte > 191 && thirdByte < 256) obfGUID += MiscUtils.leftPad(Integer.toHexString(((thirdByte * 2) - 255)), 2);
+       
+       int nextBit = Integer.parseInt(Character.toString(fileGUID.charAt(6)), 16);
+       int fourthBit = Integer.parseInt(Character.toString(fileGUID.charAt(4)), 16);
+       
+       StringBuilder builder = new StringBuilder(obfGUID);
+       System.out.println(fourthBit);
+       if (fourthBit == 15) builder.setCharAt(3, (char) (builder.charAt(3) - 1));
+       else if (nextBit == 15) builder.setCharAt(3, (char) (builder.charAt(3) - 1));
+       if (fourthBit > 7 && fourthBit < 15) builder.setCharAt(3, (char) (builder.charAt(3) + 1));
+       else if (nextBit > 7 && nextBit < 15) builder.setCharAt(3, (char) (builder.charAt(3) + 1));   
+       obfGUID = builder.toString();
+       
+       StringBuilder thirdByteBuilder = new StringBuilder(obfGUID.toUpperCase());
+       obfGUID = thirdByteBuilder.toString();
+       switch(secondByte) {
+           case 0: obfGUID += "01"; break;
+           case 1: obfGUID += "07"; break;
+           case 2: obfGUID += "08"; break;
+           case 3: obfGUID += "0C"; break;
+           case 4: obfGUID += "13"; break;
+           case 5: obfGUID += "14"; break;
+           case 6: obfGUID += "19"; break;
+           case 7: obfGUID += "1E"; break;
+           case 8: obfGUID += "23"; break;
+           case 9: obfGUID += "24"; break;
+           case 10: obfGUID += "28"; break;
+           case 11: obfGUID += "2E"; break;
+           case 12: obfGUID += "30"; break;
+           case 13: obfGUID += "37"; break;
+           case 14: obfGUID += "3A"; break;
+           case 15: obfGUID += "3E"; break;
+           case 16: obfGUID += "43"; break;
+           case 17: obfGUID += "44"; break;
+       }
+       obfGUID += "00";
+       return obfGUID;
+ }
+ 
+ public static List<byte[]> divideArray(byte[] source, int chunkSize) {
+        List<byte[]> result = new ArrayList<byte[]>();
+        int start = 0;
+        while (start < source.length) {
+            int end = Math.min(source.length, start + chunkSize);
+            result.add(Arrays.copyOfRange(source, start, end));
+            start += chunkSize;
+        }
+        return result;
+}
 }

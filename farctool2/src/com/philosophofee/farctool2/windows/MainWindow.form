@@ -243,6 +243,22 @@
                     </MenuItem>
                   </SubComponents>
                 </Menu>
+                <Menu class="javax.swing.JMenu" name="ExportMAPOptions">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value=".MAP"/>
+                  </Properties>
+                  <SubComponents>
+                    <MenuItem class="javax.swing.JMenuItem" name="MAPtoRLST">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value=".RLST"/>
+                        <Property name="enabled" type="boolean" value="false"/>
+                      </Properties>
+                      <Events>
+                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="MAPtoRLSTActionPerformed"/>
+                      </Events>
+                    </MenuItem>
+                  </SubComponents>
+                </Menu>
               </SubComponents>
             </Menu>
             <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator6">
@@ -306,6 +322,7 @@
                 <MenuItem class="javax.swing.JMenuItem" name="ReplaceSelected">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="As-is"/>
+                    <Property name="enabled" type="boolean" value="false"/>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ReplaceSelectedActionPerformed"/>
@@ -314,6 +331,7 @@
                 <MenuItem class="javax.swing.JMenuItem" name="ReplaceDecompressed">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Decompressed"/>
+                    <Property name="enabled" type="boolean" value="false"/>
                   </Properties>
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ReplaceDecompressedActionPerformed"/>
@@ -366,14 +384,15 @@
             <Property name="text" type="java.lang.String" value="Tools"/>
           </Properties>
           <SubComponents>
-            <MenuItem class="javax.swing.JMenuItem" name="MAPtoRLST">
+            <MenuItem class="javax.swing.JMenuItem" name="ReverseBytes">
               <Properties>
-                <Property name="text" type="java.lang.String" value=".RLST from .MAP"/>
-                <Property name="enabled" type="boolean" value="false"/>
+                <Property name="text" type="java.lang.String" value="Reverse Bytes..."/>
               </Properties>
               <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="MAPtoRLSTActionPerformed"/>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ReverseBytesActionPerformed"/>
               </Events>
+            </MenuItem>
+            <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator2">
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="PrintDependenciesButton">
               <Properties>
@@ -385,14 +404,6 @@
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="PrintDependenciesButtonActionPerformed"/>
-              </Events>
-            </MenuItem>
-            <MenuItem class="javax.swing.JMenuItem" name="ReverseBytes">
-              <Properties>
-                <Property name="text" type="java.lang.String" value="Reverse Bytes..."/>
-              </Properties>
-              <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ReverseBytesActionPerformed"/>
               </Events>
             </MenuItem>
           </SubComponents>
@@ -727,37 +738,11 @@
                   <SubComponents>
                     <Component class="javax.swing.JTable" name="EditorPanel">
                       <Properties>
-                        <Property name="model" type="javax.swing.table.TableModel" editor="org.netbeans.modules.form.editors2.TableModelEditor">
-                          <Table columnCount="3" rowCount="5">
-                            <Column editable="false" title="Variable" type="java.lang.Object">
-                              <Data value="Filename"/>
-                              <Data value="Time Created"/>
-                              <Data value="Size"/>
-                              <Data value="Hash"/>
-                              <Data value="GUID"/>
-                            </Column>
-                            <Column editable="true" title="Value" type="java.lang.String"/>
-                            <Column editable="false" title="Value (HEX)" type="java.lang.String"/>
-                          </Table>
+                        <Property name="model" type="javax.swing.table.TableModel" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                          <Connection code="new javax.swing.table.DefaultTableModel(&#xa;    new Object [][] {&#xa;        {&quot;Filename&quot;, null, null},&#xa;        {&quot;Time Created&quot;, null, null},&#xa;        {&quot;Size&quot;, null, null},&#xa;        {&quot;Hash&quot;, null, null},&#xa;        {&quot;GUID&quot;, null, null}&#xa;    },&#xa;    new String [] {&#xa;        &quot;Variable&quot;, &quot;Value&quot;, &quot;Value (HEX)&quot;&#xa;    }&#xa;) {&#xa;    Class[] types = new Class [] {&#xa;        java.lang.Object.class, java.lang.String.class, java.lang.String.class&#xa;    };&#xa;    boolean[] canEdit = new boolean [] {&#xa;        false, false, false&#xa;    };&#xa;&#xa;    public Class getColumnClass(int columnIndex) {&#xa;        return types [columnIndex];&#xa;    }&#xa;&#xa;    public boolean isCellEditable(int rowIndex, int columnIndex) {&#xa;        return canEdit [columnIndex];&#xa;    }&#xa;}" type="code"/>
                         </Property>
                         <Property name="columnModel" type="javax.swing.table.TableColumnModel" editor="org.netbeans.modules.form.editors2.TableColumnModelEditor">
-                          <TableColumnModel selectionModel="0">
-                            <Column maxWidth="-1" minWidth="-1" prefWidth="-1" resizable="true">
-                              <Title/>
-                              <Editor/>
-                              <Renderer/>
-                            </Column>
-                            <Column maxWidth="-1" minWidth="-1" prefWidth="-1" resizable="true">
-                              <Title/>
-                              <Editor/>
-                              <Renderer/>
-                            </Column>
-                            <Column maxWidth="-1" minWidth="-1" prefWidth="-1" resizable="true">
-                              <Title/>
-                              <Editor/>
-                              <Renderer/>
-                            </Column>
-                          </TableColumnModel>
+                          <TableColumnModel selectionModel="0"/>
                         </Property>
                         <Property name="tableHeader" type="javax.swing.table.JTableHeader" editor="org.netbeans.modules.form.editors2.JTableHeaderEditor">
                           <TableHeader reorderingAllowed="true" resizingAllowed="true"/>
