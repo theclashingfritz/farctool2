@@ -275,7 +275,7 @@ public class MainWindow extends javax.swing.JFrame {
       currFileName[currFileName.length - 1].contains(".edset") ||
       currFileName[currFileName.length - 1].contains(".nws") ||
       currFileName[currFileName.length - 1].contains(".rlist") ||
-      currFileName[currFileName.length - 1].contains("sph")
+      currFileName[currFileName.length - 1].contains(".sph")
      ) {
       //Text file we can read with the text preview pane
       PreviewLabel.setVisible(false);
@@ -374,7 +374,7 @@ public class MainWindow extends javax.swing.JFrame {
         OpenFARC = new javax.swing.JMenuItem();
         OpenFAR4 = new javax.swing.JMenuItem();
         FileExportMenu = new javax.swing.JMenu();
-        jMenu2 = new javax.swing.JMenu();
+        ExportTEXOptions = new javax.swing.JMenu();
         ExportTEXtoPNG = new javax.swing.JMenuItem();
         ExportTEXtoJPG = new javax.swing.JMenuItem();
         ExportTEXtoDDS = new javax.swing.JMenuItem();
@@ -675,7 +675,8 @@ public class MainWindow extends javax.swing.JFrame {
         FileExportMenu.setText("Export");
         FileExportMenu.setEnabled(false);
 
-        jMenu2.setText(".TEX");
+        ExportTEXOptions.setText(".TEX");
+        ExportTEXOptions.setEnabled(false);
 
         ExportTEXtoPNG.setText(".PNG");
         ExportTEXtoPNG.addActionListener(new java.awt.event.ActionListener() {
@@ -683,7 +684,7 @@ public class MainWindow extends javax.swing.JFrame {
                 ExportTEXtoPNGActionPerformed(evt);
             }
         });
-        jMenu2.add(ExportTEXtoPNG);
+        ExportTEXOptions.add(ExportTEXtoPNG);
 
         ExportTEXtoJPG.setText(".JPG");
         ExportTEXtoJPG.addActionListener(new java.awt.event.ActionListener() {
@@ -691,7 +692,7 @@ public class MainWindow extends javax.swing.JFrame {
                 ExportTEXtoJPGActionPerformed(evt);
             }
         });
-        jMenu2.add(ExportTEXtoJPG);
+        ExportTEXOptions.add(ExportTEXtoJPG);
 
         ExportTEXtoDDS.setText(".DDS");
         ExportTEXtoDDS.addActionListener(new java.awt.event.ActionListener() {
@@ -699,11 +700,12 @@ public class MainWindow extends javax.swing.JFrame {
                 ExportTEXtoDDSActionPerformed(evt);
             }
         });
-        jMenu2.add(ExportTEXtoDDS);
+        ExportTEXOptions.add(ExportTEXtoDDS);
 
-        FileExportMenu.add(jMenu2);
+        FileExportMenu.add(ExportTEXOptions);
 
         ExportMAPOptions.setText(".MAP");
+        ExportMAPOptions.setEnabled(false);
 
         MAPtoRLST.setText(".RLST");
         MAPtoRLST.setEnabled(false);
@@ -2199,6 +2201,7 @@ public class MainWindow extends javax.swing.JFrame {
   InstallMod.setEnabled(false);
   PackagePLAN.setEnabled(false);
   PrintDependenciesButton.setEnabled(false);
+  ExportTEXOptions.setEnabled(true);
 
   FileExportMenu.setEnabled(true);
   ExtractionOptions.setEnabled(true);
@@ -2209,6 +2212,7 @@ public class MainWindow extends javax.swing.JFrame {
   if (MAP != null)
    enableSharedMenus();
   else {
+   ExportTEXOptions.setEnabled(false);
    FileExportMenu.setEnabled(false);
    ExtractionOptions.setEnabled(false);
    ReplaceSelectedOptions.setEnabled(false);
@@ -2216,6 +2220,7 @@ public class MainWindow extends javax.swing.JFrame {
  }
 
  public void enableMAPMenus() {
+  FileExportMenu.setEnabled(true);
   AddEntry.setEnabled(true);
   RemoveEntry.setEnabled(true);
   ZeroEntry.setEnabled(true);
@@ -2224,13 +2229,14 @@ public class MainWindow extends javax.swing.JFrame {
   if (FARC != null)
    enableSharedMenus();
   else {
-   FileExportMenu.setEnabled(false);
+   ExportTEXOptions.setEnabled(false);
    ExtractionOptions.setEnabled(false);
    ReplaceSelectedOptions.setEnabled(false);
   }
  }
 
  public void enableSharedMenus() {
+  ExportTEXOptions.setEnabled(true);
   ReplaceSelectedOptions.setEnabled(true);
   ReplaceSelected.setEnabled(true);
   ReplaceDecompressed.setEnabled(true);
@@ -2288,6 +2294,7 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JTable EditorPanel;
     private javax.swing.JMenuItem Exit;
     private javax.swing.JMenu ExportMAPOptions;
+    private javax.swing.JMenu ExportTEXOptions;
     private javax.swing.JMenuItem ExportTEXtoDDS;
     private javax.swing.JMenuItem ExportTEXtoJPG;
     private javax.swing.JMenuItem ExportTEXtoPNG;
@@ -2327,7 +2334,6 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
-    private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
