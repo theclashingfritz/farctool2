@@ -6,7 +6,6 @@
 package com.philosophofee.farctool2.utilities;
 
 import com.philosophofee.farctool2.algorithms.KMPMatch;
-import com.philosophofee.farctool2.parsers.MapParser;
 import com.philosophofee.farctool2.windows.MainWindow;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
@@ -268,6 +267,11 @@ public static long getLong(byte[] bytes) {
   return digest.digest();
  }
  
+  public static byte[] getSHA1(byte[] file) throws Exception {
+  MessageDigest digest = MessageDigest.getInstance("SHA-1");
+  return digest.digest(file);
+ }
+ 
  public static void addEntry(String Path, String Hash, String Size, String GUID, MainWindow Window)
  {
      Boolean lbp3map = false;   
@@ -298,7 +302,7 @@ public static long getLong(byte[] bytes) {
             
             mapAccess.close();
             
-            MapParser parser = new MapParser();
+            MapUtils parser = new MapUtils();
             buildTreeFromString((DefaultTreeModel) Window.mapTree.getModel(), Path);
             ((DefaultTreeModel) Window.mapTree.getModel()).reload((DefaultMutableTreeNode)Window.mapTree.getModel().getRoot());
             Window.mapTree.updateUI();
@@ -426,7 +430,7 @@ public static long getLong(byte[] bytes) {
             String[] paths = oldName.split("/");
             deleteNodeFromPath((DefaultMutableTreeNode) (Window.mapTree.getModel().getRoot()), paths, 0);
             
-            MapParser parser = new MapParser();
+            MapUtils parser = new MapUtils();
             buildTreeFromString((DefaultTreeModel) Window.mapTree.getModel(), Filename);
             map.close();
  
@@ -527,7 +531,7 @@ public static long getLong(byte[] bytes) {
   return index;
  }
  
- public static String obfuscateGUID(String fileGUID)
+ public static String getEGUID(String fileGUID)
  {
       int secondByte = Integer.parseInt(fileGUID.substring(2, 4), 16);
        int thirdByte = Integer.parseInt(fileGUID.substring(4, 6), 16);

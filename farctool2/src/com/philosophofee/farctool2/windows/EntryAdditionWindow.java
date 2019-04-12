@@ -6,7 +6,7 @@
 package com.philosophofee.farctool2.windows;
 
 import com.philosophofee.farctool2.utilities.Entry;
-import com.philosophofee.farctool2.utilities.FarcUtils;
+import com.philosophofee.farctool2.utilities.FarUtils;
 import com.philosophofee.farctool2.utilities.MiscUtils;
 import java.io.File;
 import java.util.ArrayList;
@@ -268,17 +268,10 @@ public class EntryAdditionWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_FFFARCActionPerformed
 
     private void FFFileSelectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FFFileSelectActionPerformed
-        Window.fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
-        Window.fileChooser.setFileFilter(null);
-        Window.fileChooser.setFileFilter(Window.fileChooser.getAcceptAllFileFilter());
-        int returnVal = Window.fileChooser.showOpenDialog(this);
-
-        if (returnVal == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = Window.fileChooser.getSelectedFile();
-            SelectedFile = selectedFile;
-            FFFileSelected.setText(SelectedFile.getName());
-            
-        }
+        File file = Window.fileDialogue.openFile("", "", "", false);
+        if (file == null) { System.out.println("File access cancelled by user."); return; }
+        SelectedFile = file;
+        FFFileSelected.setText(SelectedFile.getName());
     }//GEN-LAST:event_FFFileSelectActionPerformed
 
     private void FFAddEntryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FFAddEntryActionPerformed
@@ -298,9 +291,14 @@ public class EntryAdditionWindow extends javax.swing.JFrame {
         for (int i = 0; i < Entries.size(); i++)
         {
             Entry entry = (Entry) Entries.get(i);
-            MiscUtils.addEntry(entry.Path, entry.SHA1, entry.Size, entry.GUID, Window);
             if (entry.AddToFARC)
-                FarcUtils.addFile(entry.FileToAdd, Window.FARC);
+            {
+                File[] selectedFARCs = Window.getSelectedFARCs();
+                if (selectedFARCs == null) { System.out.println("File access cancelled by user."); return; }
+                FarUtils.addFile(entry.FileToAdd, selectedFARCs);   
+                
+            }
+            MiscUtils.addEntry(entry.Path, entry.SHA1, entry.Size, entry.GUID, Window);
         }
         Window.showUserDialog("Success!", "Entries successfully added!");
         Entries.clear();

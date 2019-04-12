@@ -3,10 +3,14 @@ package com.philosophofee.farctool2.utilities;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 /*
 
@@ -48,319 +52,378 @@ Custom Compression Texture Format // Compresses files in 32 KiB slices, .tex Mag
 */
 public class ZlibUtils {
 
-    public static byte[] decompressFull(File input) {
-        int seek = 0;
-        int streamCount = 0;
-        try {
-            byte[] finale;
-            //Skip header
-            try ( //Set up access file
-                RandomAccessFile fileAccess = new RandomAccessFile(input, "rw")) {
-                //Skip header
-                
-                seek += 12;
-                fileAccess.seek(seek);
-                
-                short type = fileAccess.readShort();
-                seek += 2;
-                
-                if (type == 256) seek += 1;
-                else seek += 6;
-                
-                fileAccess.seek(seek);
-                
-                streamCount = fileAccess.readShort();
-                System.out.println("Processing " + streamCount + " Zlib streams...");
-                //Read streams
-                int[] unc = new int[streamCount];
-                int[] com = new int[streamCount];
-                int fullSize = 0;
-                for (int i = 0; i < streamCount; i++) {
-                    seek += 2;
-                    fileAccess.seek(seek);
-                    com[i] = Math.abs(fileAccess.readShort());
-                    //System.out.println("stream " + (i+1) + " compressed size: " + com[i]);
-                    seek += 2;
-                    fileAccess.seek(seek);
-                    unc[i] = Math.abs(fileAccess.readShort());
-                    //System.out.println("stream " + (i+1) + " uncompressed size: " + unc[i]);
-                    fullSize += unc[i];
-                } //Now we start piecing together the decompressed file
-                seek += 2;
-                fileAccess.seek(seek);
-                finale = new byte[fullSize];
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                //Decompress every stream and add it to the byte array
-                for (int i = 0; i < streamCount; i++) {
-                    byte[] temp = new byte[com[i]];
-                    fileAccess.readFully(temp);
-                    Inflater decompresser = new Inflater();
-                    decompresser.setInput(temp);
-                    byte[] result = new byte[unc[i]];
-                    decompresser.inflate(result);
-                    decompresser.end();
+ public static byte[] decompressFull(File input, boolean log) {
+  int seek = 0;
+  int streamCount = 0;
+  try {
+   byte[] finale;
+   try (RandomAccessFile fileAccess = new RandomAccessFile(input, "rw")) {
 
-                    outputStream.write(result);
-                }
-                finale = outputStream.toByteArray();
-                //Done!
-            }
-            System.out.println("Operation complete!");
-            return finale;
+    seek += 12;
+    fileAccess.seek(seek);
 
-        } catch (IOException | DataFormatException e) {}
-        return null;
+    short type = fileAccess.readShort();
+    seek += 2;
 
+    if (type == 256) seek += 1;
+    else seek += 6;
+
+    fileAccess.seek(seek);
+
+    streamCount = fileAccess.readShort();
+    if (log) System.out.println("Processing " + streamCount + " Zlib streams...");
+    int[] unc = new int[streamCount];
+    int[] com = new int[streamCount];
+    int fullSize = 0;
+    for (int i = 0; i < streamCount; i++) {
+     seek += 2;
+     fileAccess.seek(seek);
+     com[i] = Math.abs(fileAccess.readShort());
+     seek += 2;
+     fileAccess.seek(seek);
+     unc[i] = Math.abs(fileAccess.readShort());
+     fullSize += unc[i];
     }
-    /**
-     * Returns an array of bytes that have been decompressed from an LBP 32-KiB 
-     * zlib file.
-     * 
-     * @param input
-     * @return
-     * @throws java.util.zip.DataFormatException
-     */
-    public static byte[] decompressThis(byte[] input) throws DataFormatException {
+    seek += 2;
+    fileAccess.seek(seek);
+    finale = new byte[fullSize];
+    try(ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
+    {
+       for (int i = 0; i < streamCount; i++) {
+       byte[] temp = new byte[com[i]];
+       fileAccess.readFully(temp);
+       Inflater decompresser = new Inflater();
+       decompresser.setInput(temp);
+       byte[] result = new byte[unc[i]];
+       decompresser.inflate(result);
+       decompresser.end();
 
-        //create temp file from input
-        try (FileOutputStream fos = new FileOutputStream("temp")) {
-            fos.write(input);
-            fos.close();
-        } catch (IOException ex) {}
-
-        File workingFile = new File("temp");
-        switch (MiscUtils.getHeaderHexString(workingFile)) {
-            case "54455820":
-                System.out.println("Format: TEX File");
-                return decompressTex(workingFile);
-            case "47544620":
-                System.out.println("Format: GTF File");
-                return decompressGTF(workingFile);
-            case "47544673":
-                System.out.println("Format: PS Vita GTF Swizzled (GXT) (Simple Header) - Not yet implemented");
-                break;
-            case "47544653":
-                System.out.println("Format: PS Vita GTF Swizzled (GXT) (Extended Header) - Not yet implemented");
-                break;
-            case "504C4E62":
-            case "414E4D62":
-            case "42455662":
-            case "4C564C62":
-            case "434C4462":
-            case "46534862":
-            case "474D5462":
-            case "4F415462":
-            case "4D534862":
-            case "534C5462":
-            case "50414C62":
-            case "50434B62":
-                    System.out.println("Format: Custom Compression Full");
-                    return decompressFull(workingFile);
-            default:
-                System.out.println("Not implemented");
-                return input;
-        }
-
-
-
-        return null;
+       outputStream.write(result);
+      }
+      finale = outputStream.toByteArray();   
+      fileAccess.close();
     }
+   }
+   if (log) System.out.println("Operation complete!");
+   return finale;
 
-    public static byte[] decompressTex(File input) {
-        int seek = 0;
-        int streamCnt = 0;
-        try {
-            byte[] finale;
-            //Skip header
-            try ( //Set up access file
-                RandomAccessFile fileAccess = new RandomAccessFile(input, "rw")) {
-                //Skip header
-                seek += 4;
-                fileAccess.seek(seek);
-                //Skip encryption (maybe will add later but undocumented)
-                seek += 2;
-                fileAccess.seek(seek);
-                //Read stream count
-                streamCnt = fileAccess.readShort();
-                System.out.println("Processing " + streamCnt + " Zlib streams...");
-                //Read streams
-                int[] unc = new int[streamCnt];
-                int[] com = new int[streamCnt];
-                int fullSize = 0;
-                for (int i = 0; i < streamCnt; i++) {
-                    seek += 2;
-                    fileAccess.seek(seek);
-                    com[i] = Math.abs(fileAccess.readShort());
-                    //System.out.println("stream " + (i+1) + " compressed size: " + com[i]);
-                    seek += 2;
-                    fileAccess.seek(seek);
-                    unc[i] = Math.abs(fileAccess.readShort());
-                    //System.out.println("stream " + (i+1) + " uncompressed size: " + unc[i]);
-                    fullSize += unc[i];
-                } //Now we start piecing together the decompressed file
-                seek += 2;
-                fileAccess.seek(seek);
-                finale = new byte[fullSize];
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                //Decompress every stream and add it to the byte array
-                for (int i = 0; i < streamCnt; i++) {
-                    byte[] temp = new byte[com[i]];
-                    fileAccess.readFully(temp);
-                    Inflater decompresser = new Inflater();
-                    decompresser.setInput(temp);
-                    byte[] result = new byte[unc[i]];
-                    decompresser.inflate(result);
-                    decompresser.end();
+  } catch (IOException | DataFormatException e) {}
+  return null;
 
-                    outputStream.write(result);
-                }
-                finale = outputStream.toByteArray();
-                //Done!
-            }
-            try (FileOutputStream fos = new FileOutputStream("temp_prev_tex")) {
-                fos.write(finale);
-            }
-            System.out.println("Operation complete!");
-            return finale;
+ }
+ /**
+  * Returns an array of bytes that have been decompressed from an LBP 32-KiB 
+  * zlib file.
+  * 
+  * @param input
+  * @return
+  * @throws java.util.zip.DataFormatException
+  */
+ public static byte[] decompressThis(byte[] input, boolean log) throws DataFormatException {
 
-        } catch (IOException | DataFormatException e) {}
-        return null;
+  //create temp file from input
+  try (FileOutputStream fos = new FileOutputStream("temp")) { fos.write(input); fos.close(); } catch (IOException ex) {}
+
+  File workingFile = new File("temp");
+  switch (MiscUtils.getHeaderHexString(workingFile)) {
+   case "54455820":
+    if (log) System.out.println("Format: TEX File");
+    return decompressTex(workingFile, log);
+   case "47544620":
+    if (log) System.out.println("Format: GTF File");
+    return decompressGTF(workingFile, log);
+   case "47544673":
+    if (log) System.out.println("Format: PS Vita GTF Swizzled (GXT) (Simple Header) - Not yet implemented");
+    break;
+   case "47544653":
+    if (log) System.out.println("Format: PS Vita GTF Swizzled (GXT) (Extended Header) - Not yet implemented");
+    break;
+   case "504C4E62":
+   case "414E4D62":
+   case "42455662":
+   case "4C564C62":
+   case "434C4462":
+   case "46534862":
+   case "474D5462":
+   case "4F415462":
+   case "4D534862":
+   case "534C5462":
+   case "50414C62":
+   case "50434B62":
+   case "42505262":
+    if (log) System.out.println("Format: Custom Compression Full");
+    return decompressFull(workingFile, log);
+   default:
+    if (log) System.out.println("Not implemented");
+    return input;
+  }
+  return null;
+ }
+
+ public static byte[] decompressTex(File input, boolean log) {
+  int seek = 0;
+  int streamCnt = 0;
+  try {
+   byte[] finale;
+   //Skip header
+   try ( //Set up access file
+    RandomAccessFile fileAccess = new RandomAccessFile(input, "rw")) {
+    //Skip header
+    seek += 4;
+    fileAccess.seek(seek);
+    //Skip encryption (maybe will add later but undocumented)
+    seek += 2;
+    fileAccess.seek(seek);
+    //Read stream count
+    streamCnt = fileAccess.readShort();
+    if (log) System.out.println("Processing " + streamCnt + " Zlib streams...");
+    //Read streams
+    int[] unc = new int[streamCnt];
+    int[] com = new int[streamCnt];
+    int fullSize = 0;
+    for (int i = 0; i < streamCnt; i++) {
+     seek += 2;
+     fileAccess.seek(seek);
+     com[i] = Math.abs(fileAccess.readShort());
+     seek += 2;
+     fileAccess.seek(seek);
+     unc[i] = Math.abs(fileAccess.readShort());
+     fullSize += unc[i];
+    } //Now we start piecing together the decompressed file
+    seek += 2;
+    fileAccess.seek(seek);
+    finale = new byte[fullSize];
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    //Decompress every stream and add it to the byte array
+    for (int i = 0; i < streamCnt; i++) {
+     byte[] temp = new byte[com[i]];
+     fileAccess.readFully(temp);
+     Inflater decompresser = new Inflater();
+     decompresser.setInput(temp);
+     byte[] result = new byte[unc[i]];
+     decompresser.inflate(result);
+     decompresser.end();
+
+     outputStream.write(result);
     }
-    public static byte[] decompressGTF(File input) throws DataFormatException {
-        int seek = 0;
-        int streamCnt = 0;
-        String DXTMode = "";
-        short width = 0;
-        short height = 0;
-        String widthHex = "";
-        String heightHex = "";
-        try {
-            //Set up access file
-            RandomAccessFile fileAccess = new RandomAccessFile(input, "rw");
-            seek += 4;
-            fileAccess.seek(seek);
-            //System.out.println("DXT Mode: " + fileAccess.readByte());
-            //Get dxt mode
-            switch (fileAccess.readByte()) {
-                case -122:
-                    System.out.println("DXT Mode: DXT1");
-                    DXTMode = "DXT1";
-                    break;
-                case -120:
-                    System.out.println("DXT Mode: DXT5");
-                    DXTMode = "DXT5";
-                    break;
-                case -123:
-                    System.out.println("DXT Mode: 8.8.8.8 RGBA 32 Bit");
-                    DXTMode = "8.8.8.8";
-                    break;
-                default:
-                    System.out.println("Unknown DXT Mode!");
-                    break;
-            }
-            seek += 3;
-            fileAccess.seek(seek);
+    finale = outputStream.toByteArray();
+    //Done!
+   }
+   try (FileOutputStream fos = new FileOutputStream("temp_prev_tex")) {
+    fos.write(finale);
+   }
+   if (log) System.out.println("Operation complete!");
+   return finale;
 
-            //4 bytes unknown 0x0000AAE4
-            seek += 4;
-            fileAccess.seek(seek);
+  } catch (IOException | DataFormatException e) {}
+  return null;
+ }
+ public static byte[] decompressGTF(File input, boolean log) throws DataFormatException {
+  int seek = 0;
+  int streamCnt = 0;
+  String DXTMode = "";
+  short width = 0;
+  short height = 0;
+  String widthHex = "";
+  String heightHex = "";
+  try {
+   //Set up access file
+   RandomAccessFile fileAccess = new RandomAccessFile(input, "rw");
+   seek += 4;
+   fileAccess.seek(seek);
+   //Get dxt mode
+   switch (fileAccess.readByte()) {
+    case -122:
+     if (log) System.out.println("DXT Mode: DXT1");
+     DXTMode = "DXT1";
+     break;
+    case -120:
+     if (log) System.out.println("DXT Mode: DXT5");
+     DXTMode = "DXT5";
+     break;
+    case -123:
+     if (log) System.out.println("DXT Mode: 8.8.8.8 RGBA 32 Bit");
+     DXTMode = "8.8.8.8";
+     break;
+    default:
+     if (log) System.out.println("Unknown DXT Mode!");
+     break;
+   }
+   seek += 3;
+   fileAccess.seek(seek);
+   
+   seek += 4;
+   fileAccess.seek(seek);
 
-            //2 bytes width
-            fileAccess.seek(12);
-            width = fileAccess.readShort();
-            System.out.println("Width: " + width + "px");
-            fileAccess.seek(12); //do it again
-            for (int i2 = 0; i2 < 2; i2++) {
-                widthHex += String.format("%02X", fileAccess.readByte());
-            }
-            System.out.println("Width in HEX: " + widthHex);
-            System.out.println("Width in HEX (Little Endian): " + MiscUtils.convertShortHexStringToLittleEndian(widthHex));
+   //2 bytes width
+   fileAccess.seek(12);
+   width = fileAccess.readShort();
+   if (log) System.out.println("Width: " + width + "px");
+   fileAccess.seek(12); //do it again
+   for (int i2 = 0; i2 < 2; i2++) widthHex += String.format("%02X", fileAccess.readByte());
 
+   //2 bytes height
+   fileAccess.seek(14);
+   height = fileAccess.readShort();
+   if (log) System.out.println("Height: " + height + "px");
+   fileAccess.seek(14); //do it again
+   for (int i2 = 0; i2 < 2; i2++) heightHex += String.format("%02X", fileAccess.readByte());
 
-            //2 bytes height
-            fileAccess.seek(14);
-            height = fileAccess.readShort();
-            System.out.println("Height: " + height + "px");
-            fileAccess.seek(14); //do it again
-            for (int i2 = 0; i2 < 2; i2++) {
-                heightHex += String.format("%02X", fileAccess.readByte());
-            }
-            System.out.println("Height in HEX: " + heightHex);
-            System.out.println("Height in HEX (Little Endian): " + MiscUtils.convertShortHexStringToLittleEndian(heightHex));
+   try (FileOutputStream fos = new FileOutputStream("temp_prev_tex")) {
+    fos.write(MiscUtils.hexStringToByteArray("444453207C00000007100A00"));
+    fos.write(MiscUtils.hexStringToByteArray(MiscUtils.convertShortHexStringToLittleEndian(heightHex)));
+    fos.write(MiscUtils.hexStringToByteArray("0000"));
+    fos.write(MiscUtils.hexStringToByteArray(MiscUtils.convertShortHexStringToLittleEndian(widthHex)));
+    fos.write(MiscUtils.hexStringToByteArray("0000"));
+    if (!"8.8.8.8".equals(DXTMode)) {
+     fos.write(MiscUtils.hexStringToByteArray("00400000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000004000000"));
+     if ("DXT1".equals(DXTMode)) fos.write(MiscUtils.hexStringToByteArray("44585431"));
+     else if ("DXT5".equals(DXTMode))
+      fos.write(MiscUtils.hexStringToByteArray("44585435"));
+    fos.write(MiscUtils.hexStringToByteArray("00000000000000000000000000000000000000000810400000000000000000000000000000000000"));
+    } else fos.write(MiscUtils.hexStringToByteArray("0040000000000000070000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000004100000000000000200000000000FF0000FF0000FF000000000000FF0810400000000000000000000000000000000000"));
+    
 
+    //now actually get the texture data...
+    //Read stream count
+    seek = 30;
+    fileAccess.seek(seek);
+    streamCnt = fileAccess.readShort();
+    if (log) System.out.println("Processing " + streamCnt + " Zlib streams...");
+    //Read streams
+    int[] unc = new int[streamCnt];
+    int[] com = new int[streamCnt];
+    int fullSize = 0;
+    for (int i = 0; i < streamCnt; i++) {
+     seek += 2;
+     fileAccess.seek(seek);
+     com[i] = Math.abs(fileAccess.readShort());
+     seek += 2;
+     fileAccess.seek(seek);
+     unc[i] = Math.abs(fileAccess.readShort());
+     fullSize += unc[i];
+    } //Now we start piecing together the decompressed file
+    seek += 2;
+    fileAccess.seek(seek);
+    byte[] finale = new byte[fullSize];
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    //Decompress every stream and add it to the byte array
+    for (int i = 0; i < streamCnt; i++) {
+     byte[] temp = new byte[com[i]];
+     fileAccess.readFully(temp);
+     Inflater decompresser = new Inflater();
+     decompresser.setInput(temp);
+     byte[] result = new byte[unc[i]];
+     decompresser.inflate(result);
+     decompresser.end();
 
-            try (FileOutputStream fos = new FileOutputStream("temp_prev_tex")) {
-                fos.write(MiscUtils.hexStringToByteArray("444453207C00000007100A00"));
-                fos.write(MiscUtils.hexStringToByteArray(MiscUtils.convertShortHexStringToLittleEndian(heightHex)));
-                fos.write(MiscUtils.hexStringToByteArray("0000"));
-                fos.write(MiscUtils.hexStringToByteArray(MiscUtils.convertShortHexStringToLittleEndian(widthHex)));
-                fos.write(MiscUtils.hexStringToByteArray("0000"));
-                if (!"8.8.8.8".equals(DXTMode))
-                {
-                    fos.write(MiscUtils.hexStringToByteArray("00400000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000004000000"));
-                    if ("DXT1".equals(DXTMode))
-                        fos.write(MiscUtils.hexStringToByteArray("44585431"));
-                    else if ("DXT5".equals(DXTMode))
-                        fos.write(MiscUtils.hexStringToByteArray("44585435"));
-                    fos.write(MiscUtils.hexStringToByteArray("00000000000000000000000000000000000000000810400000000000000000000000000000000000"));
-                }
-                else {
-                    fos.write(MiscUtils.hexStringToByteArray("0040000000000000070000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000004100000000000000200000000000FF0000FF0000FF000000000000FF0810400000000000000000000000000000000000"));
-                }
-                
-                //now actually get the texture data...
-                //Read stream count
-                seek = 30;
-                fileAccess.seek(seek);
-                streamCnt = fileAccess.readShort();
-                System.out.println("Processing " + streamCnt + " Zlib streams...");
-                //Read streams
-                int[] unc = new int[streamCnt];
-                int[] com = new int[streamCnt];
-                int fullSize = 0;
-                System.out.println(unc.length + " " + com.length);
-                for (int i = 0; i < streamCnt; i++) {
-                    seek += 2;
-                    fileAccess.seek(seek);
-                    com[i] = Math.abs(fileAccess.readShort());
-                    System.out.println("Stream " + (i+1) + " compressed size: " + com[i]);
-                    seek += 2;
-                    fileAccess.seek(seek);
-                    unc[i] = Math.abs(fileAccess.readShort());
-                    System.out.println("Stream " + (i+1) + " uncompressed size: " + unc[i]);
-                    fullSize += unc[i];
-                } //Now we start piecing together the decompressed file
-                seek += 2;
-                fileAccess.seek(seek);
-                byte[] finale = new byte[fullSize];
-                System.out.println(fullSize);
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                //Decompress every stream and add it to the byte array
-                for (int i = 0; i < streamCnt; i++) {
-                    byte[] temp = new byte[com[i]];
-                    fileAccess.readFully(temp);
-                    Inflater decompresser = new Inflater();
-                    decompresser.setInput(temp);
-                    byte[] result = new byte[unc[i]];
-                    decompresser.inflate(result);
-                    decompresser.end();
-
-                    outputStream.write(result);
-                }
-                finale = outputStream.toByteArray();
-                fos.write(finale);
-                fos.close();
-                fileAccess.close();
-                
-                FileInputStream fis = new FileInputStream("temp_prev_tex");
-                byte[] fullfinale = fis.readAllBytes();
-                fis.close();
-                return fullfinale;
-                //ok, we're done
-            }
-
-        } catch (IOException e) {}
-        return null;
-
+     outputStream.write(result);
     }
+    finale = outputStream.toByteArray();
+    fos.write(finale);
+    fos.close();
+    fileAccess.close();
+
+    FileInputStream fis = new FileInputStream("temp_prev_tex");
+    byte[] fullfinale = fis.readAllBytes();
+    fis.close();
+    return fullfinale;
+    //ok, we're done
+   }
+
+  } catch (IOException e) {}
+  return null;
+
+ }
+
+ public static byte[] compressFile(File workingFile, File decompressFile, boolean log) throws FileNotFoundException, IOException {
+  File tempc = File.createTempFile("tempc", ".tmp");
+  FileInputStream Stream = new FileInputStream(decompressFile); byte[] fileToCompress = Stream.readAllBytes(); Stream.close();
+  switch (MiscUtils.getHeaderHexString(workingFile)) {
+   case "504C4E62":
+   case "414E4D62":
+   case "42455662":
+   case "4C564C62":
+   case "434C4462":
+   case "46534862":
+   case "474D5462":
+   case "4F415462":
+   case "4D534862":
+   case "534C5462":
+   case "50414C62":
+   case "50434B62":
+   case "42505262":
+    if (log) System.out.println("Format: Custom Compression Full");
+    break;
+   default:
+    if (log) System.out.println("Not implemented | Not a valid file type");
+    return null;
+  }
+
+  int CHUNK_SIZE = 32768;
+
+  int numberOfChunks = ((int) Math.ceil((fileToCompress.length / CHUNK_SIZE))) + 1;
+
+  int[] compressedSize = new int[numberOfChunks];
+  int[] uncompressedSize = new int[numberOfChunks];
+  ArrayList compressedData = new ArrayList < byte[] > ();
+  List < byte[] > uncompressedData = MiscUtils.divideArray(fileToCompress, CHUNK_SIZE);
+  for (int i = 0; i < numberOfChunks; i++) {
+   Deflater deflater = new Deflater();
+   uncompressedSize[i] = uncompressedData.get(i).length;
+   ByteArrayOutputStream outputStream = new ByteArrayOutputStream(uncompressedData.get(i).length);
+   deflater.setInput(uncompressedData.get(i));
+   deflater.finish();
+   byte[] chunk = new byte[1024];
+   while (!deflater.finished()) {
+    int count = deflater.deflate(chunk);
+    outputStream.write(chunk, 0, count);
+   }
+   outputStream.close();
+   compressedData.add(outputStream.toByteArray());
+   compressedSize[i] = outputStream.size();
+  }
+
+  int seek = 8;
+  try(FileInputStream fis = new FileInputStream("temp")) { try(FileOutputStream fos = new FileOutputStream(tempc)) { fos.write(fis.readAllBytes()); fis.close(); fos.close(); } }
+
+  try(RandomAccessFile fileAccess = new RandomAccessFile(tempc, "rw")) {
+    seek = 8;
+    fileAccess.seek(seek);
+    int dependencyOffset = fileAccess.readInt();
+
+    fileAccess.seek(dependencyOffset);
+    byte[] dependencies = new byte[(int)(fileAccess.length() - dependencyOffset)];
+    fileAccess.read(dependencies);
+
+    seek = 12;
+    fileAccess.seek(seek);
+
+    short type = fileAccess.readShort();
+
+    if (type == 256) seek += 3;
+    else seek += 8;
+
+    fileAccess.seek(seek);
+    fileAccess.writeShort(numberOfChunks);
+    for (int i = 0; i < uncompressedSize.length; i++) {
+     fileAccess.writeShort(compressedSize[i]);
+     fileAccess.writeShort(uncompressedSize[i]);
+    }
+    for (int i = 0; i < numberOfChunks; i++) fileAccess.write((byte[]) compressedData.get(i));
+    dependencyOffset = (int) fileAccess.getFilePointer();
+    fileAccess.write(dependencies);
+
+    fileAccess.seek(8);
+    fileAccess.writeInt(dependencyOffset);
+    
+    fileAccess.close();
+    
+    FileInputStream fis = new FileInputStream(tempc);
+    byte[] data = fis.readAllBytes();
+    fis.close();
+    tempc.delete();
+    return data;
+  }
+ }
 }

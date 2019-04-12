@@ -5,7 +5,7 @@
  */
 package com.philosophofee.farctool2.windows;
 
-import com.philosophofee.farctool2.utilities.FarcUtils;
+import com.philosophofee.farctool2.utilities.FarUtils;
 import com.philosophofee.farctool2.utilities.MiscUtils;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -36,11 +36,13 @@ public class ModInstaller extends javax.swing.JFrame {
     public String directory;
     public Document mod;
     public MainWindow window;
+    public File[] selectedFARCs;
     
-    public ModInstaller(Document mod, String directory, MainWindow window) throws IOException {
+    public ModInstaller(Document mod, String directory, File[] selectedFARCs, MainWindow window) throws IOException {
         initComponents();
         Title.setText(mod.getDocumentElement().getAttribute("name"));
         Description.setText("<html>" + mod.getDocumentElement().getAttribute("description") + "</html>");
+        this.selectedFARCs = selectedFARCs;
         this.directory = directory;
         this.mod = mod;
         this.window = window;
@@ -166,7 +168,7 @@ public class ModInstaller extends javax.swing.JFrame {
                     if (MiscUtils.findGUIDOffset(GUID, window.MAP) != -1) MiscUtils.replaceEntryByGUID(GUID, Path, Integer.toString((int)Size), MiscUtils.byteArrayToHexString(SHA1), window);
                     else MiscUtils.addEntry(Path, MiscUtils.byteArrayToHexString(SHA1), Integer.toString((int) Size), GUID, window);
 
-                    FarcUtils.addFile(newFile, window.FARC);
+                    FarUtils.addFile(newFile, selectedFARCs);
                     
                     ((DefaultTreeModel) window.mapTree.getModel()).reload((DefaultMutableTreeNode)window.mapTree.getModel().getRoot());
                     window.mapTree.updateUI();

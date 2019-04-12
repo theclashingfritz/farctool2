@@ -1,4 +1,4 @@
-package com.philosophofee.farctool2.parsers;
+package com.philosophofee.farctool2.utilities;
 
 import com.philosophofee.farctool2.utilities.MiscUtils;
 import java.io.DataInputStream;
@@ -9,7 +9,7 @@ import java.io.IOException;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
-public class MapParser {
+public class MapUtils {
 
  public DefaultTreeModel parseMapIntoMemory(TreeNode root, File file) {
   DefaultTreeModel model = new DefaultTreeModel(root);
@@ -20,25 +20,7 @@ public class MapParser {
     
     // Initialize Variables // 
     long begin = System.currentTimeMillis();
-    boolean lbp3map = false;
-    
-    // Detect from which game the .MAP originates. //
-    int header = mapAccess.readInt();
-    switch (header)
-    {
-        case 256:
-            System.out.println("Detected: LBP 1/2 .MAP File");
-            break;
-        case 21496064:
-               System.out.println("Detected: LBP3 .MAP File");
-               lbp3map = true;
-               break;
-        case 936:
-            System.out.println("Detected: LBP Vita .MAP File");
-            break;
-        default:
-            throw new IOException("Error reading 4 bytes - not a valid .map file");
-    }
+    boolean lbp3map = isLBP3Map(mapAccess.readInt(), true);
     
     // Get the amount of entries present in the .MAP File //
     int mapEntries = mapAccess.readInt();
@@ -51,24 +33,20 @@ public class MapParser {
     {
 
         // Seek 2 bytes if the .MAP originates from LBP1/2. //
-        if (!lbp3map)
-            mapAccess.skip(2);
+        if (!lbp3map) mapAccess.skip(2);
         
         // Get path of entry //
-        fileNameLength = mapAccess.readShort();
-        byte[] fileNameBytes = new byte[fileNameLength];
+        byte[] fileNameBytes = new byte[mapAccess.readShort()];
         mapAccess.read(fileNameBytes);
         fileName = new String(fileNameBytes);
 
         // Seek 4 bytes if the .MAP originates from LBP1/2. (Padding) //
-        if (!lbp3map) 
-            mapAccess.skip(4);
+        if (!lbp3map) mapAccess.skip(4);
         
         // Skip the rest of the data as it's obtained at a future point in time. //
         mapAccess.skip(32);
         
-        if (fileName.contains(".fsb") || fileName.contains(".farc") || fileName.contains(".sdat") || fileName.contains(".edat") || fileName.contains(".bik") || fileName.contains(".fnt") || fileName.contains(".fev") || fileName.equals(""))
-            continue;
+        if (isHidden(fileName)) continue;
 
         // Build the node for the JTree. //
         MiscUtils.buildTreeFromString(model, fileName);
@@ -85,4 +63,29 @@ public class MapParser {
   
   return model;
  }
+ 
+ public static boolean isLBP3Map(int header, boolean log) throws IOException {
+    switch (header)
+    {
+        case 256:
+            if (log) System.out.println("Detected: LBP 1/2 .MAP File");
+            return false;
+        case 21496064:
+               if (log) System.out.println("Detected: LBP3 .MAP File");
+               return true;
+        case 936:
+            if (log) System.out.println("Detected: LBP Vita .MAP File");
+            return false;
+        default:
+            throw new IOException("Error reading 4 bytes - not a valid .map file");
+    }
+ }
+ 
+ public static boolean isHidden(String entry) {
+     return (entry.contains(".fsb") || entry.contains(".farc") || entry.contains(".sdat") || 
+             entry.contains(".edat") || entry.contains(".bik") || 
+             entry.contains(".fnt") || entry.contains(".fev") || 
+             entry.equals(""));
+ }
+ 
 }

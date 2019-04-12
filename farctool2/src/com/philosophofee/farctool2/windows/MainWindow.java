@@ -3,11 +3,15 @@ package com.philosophofee.farctool2.windows;
 import com.bulenkov.darcula.DarculaLaf;
 import com.philosophofee.farctool2.streams.CustomPrintStream;
 import com.philosophofee.farctool2.algorithms.KMPMatch;
-import com.philosophofee.farctool2.parsers.MapParser;
+import com.philosophofee.farctool2.utilities.MapUtils;
 import com.philosophofee.farctool2.streams.TextAreaOutputStream;
 import com.philosophofee.farctool2.utilities.MiscUtils;
 import com.philosophofee.farctool2.utilities.ZlibUtils;
-import com.philosophofee.farctool2.utilities.FarcUtils;
+import com.philosophofee.farctool2.utilities.FarUtils;
+import com.philosophofee.farctool2.utilities.FileChooser;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,9 +35,15 @@ import java.util.logging.Logger;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.ActionMap;
 import javax.swing.ImageIcon;
+import javax.swing.InputMap;
+import static javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.JTree;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -48,6 +58,9 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
+import javax.swing.KeyStroke;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.TreeNode;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
@@ -62,26 +75,27 @@ import tv.porst.jhexview.JHexView.DefinitionStatus;
 public class MainWindow extends javax.swing.JFrame {
 
  public File MAP = null;
- public File FARC = null;
+ public File FARC[] = null;
  public File FAR4 = null;
+ 
  public String currSHA1[] = null;
  public String currGUID[] = null;
  public String currFileName[] = null;
  public String currSize[] = null;
 
- public String FAR4SHA1[] = null;
- public String FAR4Size[] = null;
+ public static String FAR4SHA1[] = null;
+ public static String FAR4Size[] = null;
 
- public int BPRbOffset;
- public int BPRbLength;
+ public String PRFbSHA1;
  public String BPRbSHA1;
-
- public static Boolean developerMode = false;
+ public String IPReSHA1;
+ 
  public TreePath[] selectedPaths = null;
+ 
+ public FileChooser fileDialogue = new FileChooser(this);
 
- public MainWindow() {
+ public MainWindow() {     
   initComponents();
-  fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
   PreviewLabel.setVisible(false);
   TextPrevScroll.setVisible(false);
   TextPreview.setVisible(false);
@@ -106,10 +120,7 @@ public class MainWindow extends javax.swing.JFrame {
    }
 
    for (int currentTreeNode = 0; currentTreeNode < selectedPaths.length; currentTreeNode++) {
-
-    if (node == null) {
-     return;
-    }
+    if (node == null) return;
     node = (DefaultMutableTreeNode) selectedPaths[currentTreeNode].getLastPathComponent();
     if (node.getChildCount() > 0) {
      currSHA1[currentTreeNode] = null;
@@ -118,95 +129,67 @@ public class MainWindow extends javax.swing.JFrame {
      currSize[currentTreeNode] = null;
      continue;
     }
-    if (mapTree.getSelectionPath().getPathCount() == 1) {
-     return;
-    }
+    if (mapTree.getSelectionPath().getPathCount() == 1) return;
+    
     String[] test = new String[selectedPaths[currentTreeNode].getPathCount()];
-    for (int i = 1; i < selectedPaths[currentTreeNode].getPathCount(); i++) {
-     test[i] = selectedPaths[currentTreeNode].getPathComponent(i).toString();
-    }
+    for (int i = 1; i < selectedPaths[currentTreeNode].getPathCount(); i++) test[i] = selectedPaths[currentTreeNode].getPathComponent(i).toString();
     String finalString = new String();
     for (int i = 1; i < selectedPaths[currentTreeNode].getPathCount(); i++) {
      finalString += test[i];
-     if (i != selectedPaths[currentTreeNode].getPathCount() - 1) {
-      finalString += "/";
-     }
+     if (i != selectedPaths[currentTreeNode].getPathCount() - 1) finalString += "/";
     }
 
     if (finalString.contains(".") && FAR4 == null) {
-     //System.out.println("You currently have selected " + finalString); //this is annoying
      currFileName[currentTreeNode] = finalString;
      EditorPanel.setValueAt(finalString, 0, 1);
      KMPMatch matcher = new KMPMatch();
 
      try {
       long offset = 0;
-      boolean lbp3map = false;
       offset = matcher.indexOf(Files.readAllBytes(MAP.toPath()), finalString.getBytes());
       try (RandomAccessFile mapAccess = new RandomAccessFile(MAP, "rw")) {
        mapAccess.seek(0);
-       if (mapAccess.readInt() == 21496064) {
-        lbp3map = true;
-       }
+       boolean lbp3map = MapUtils.isLBP3Map(mapAccess.readInt(), false);
 
-       mapAccess.seek(offset);
        offset += finalString.length();
+
+       if (lbp3map == false) offset += 4;
+       
        mapAccess.seek(offset);
 
-       if (lbp3map == false) {
-        offset += 4;
-        mapAccess.seek(offset);
-       }
+       // Get that timestamp, baby! //
 
-       //Get timestamp
-
-       String fileTimeStamp = "";
-       for (int i = 0; i < 4; i++) {
-        fileTimeStamp += String.format("%02X", mapAccess.readByte());
-        offset += 1;
-        mapAccess.seek(offset);
-       }
+       String fileTimeStamp = MiscUtils.leftPad(Integer.toHexString(mapAccess.readInt()), 8);
        EditorPanel.setValueAt(fileTimeStamp, 1, 2); //set hex timestamp
        Date readableDate = new Date();
        readableDate.setTime((long) Integer.parseInt(fileTimeStamp, 16) * 1000);
        EditorPanel.setValueAt(readableDate.toString(), 1, 1); //set readable timestamp
 
-       //Get size
-       String fileSize = "";
-       for (int i = 0; i < 4; i++) {
-        fileSize += String.format("%02X", mapAccess.readByte());
-        offset += 1;
-        mapAccess.seek(offset);
-       }
+       // Get the size. //
+       String fileSize = MiscUtils.leftPad(Integer.toHexString(mapAccess.readInt()), 8);
        currSize[currentTreeNode] = fileSize;
        EditorPanel.setValueAt(fileSize, 2, 2); //set hex filesize
        EditorPanel.setValueAt(Integer.parseInt(fileSize, 16), 2, 1); //set readable filesize
 
-       //Get hash
-       String fileHash = "";
-       for (int i = 0; i < 20; i++) {
-        fileHash += String.format("%02X", mapAccess.readByte());
-        offset += 1;
-        mapAccess.seek(offset);
-       }
+       // Get the SHA1. //
+       byte[] rawHash = new byte[20];
+       mapAccess.read(rawHash);
+       String fileHash = MiscUtils.byteArrayToHexString(rawHash);
        EditorPanel.setValueAt(fileHash, 3, 2); //set hex hash
        currSHA1[currentTreeNode] = fileHash;
        EditorPanel.setValueAt(fileHash, 3, 1); //set readable hash (redundant)
 
-       //Get guid
-       String fileGUID = "";
-       for (int i = 0; i < 4; i++) {
-        fileGUID += String.format("%02X", mapAccess.readByte());
-        offset += 1;
-        mapAccess.seek(offset);
-       }
+       // Get the wildly exquisite GUID. //
+       
+       String fileGUID = MiscUtils.leftPad(Integer.toHexString(mapAccess.readInt()), 8);
        currGUID[currentTreeNode] = fileGUID;
        EditorPanel.setValueAt(fileGUID, 4, 2); //set hex guid
        EditorPanel.setValueAt("g" + Integer.parseInt(fileGUID, 16), 4, 1); //set readable guid
        
-       String obfGUID = MiscUtils.obfuscateGUID(fileGUID);
-       //EditorPanel.setValueAt(obfGUID.toUpperCase(), 5, 1);
-       //EditorPanel.setValueAt(obfGUID.toUpperCase(), 5, 2);
+       // Get the esoteric GUID. // // The method for calculating this isn't finished, so it's just going to be left commented. //
+       //String eGUID = MiscUtils.getEGUID(fileGUID);
+       //EditorPanel.setValueAt(eGUID.toUpperCase(), 5, 1);
+       //EditorPanel.setValueAt(eGUID.toUpperCase(), 5, 2);
        
       } catch (IOException ex) {
        Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
@@ -237,7 +220,6 @@ public class MainWindow extends javax.swing.JFrame {
     }
    }
 
-
    if ((FARC != null || FAR4 != null) && selectedPaths.length != 0 && currFileName[0] != null) {
     FileOutputStream fos = null;
     try {
@@ -248,9 +230,9 @@ public class MainWindow extends javax.swing.JFrame {
      TextPreview.setVisible(false);
      byte[] workWithData = null;
      if (FAR4 != null)
-      workWithData = FarcUtils.pullFromFAR4(currFileName[currFileName.length - 1].split("[.]")[0], currSize[currFileName.length - 1], FAR4);
+      workWithData = FarUtils.pullFromFAR4(currFileName[currFileName.length - 1].split("[.]")[0], currSize[currFileName.length - 1], FAR4);
      else
-      workWithData = FarcUtils.pullFromFarc(currSHA1[currFileName.length - 1], FARC);
+      workWithData = FarUtils.pullFromFarc(currSHA1[currFileName.length - 1], FARC, true);
      if (workWithData == null) {
       System.out.println("As a result, I wasn't able to preview anything...");
       hexViewer.setData(null);
@@ -287,7 +269,7 @@ public class MainWindow extends javax.swing.JFrame {
      }
      if (currFileName[currFileName.length - 1].contains(".tex")) {
       try {
-       ZlibUtils.decompressThis(workWithData);
+       ZlibUtils.decompressThis(workWithData, true);
        PreviewLabel.setVisible(true);
        TextPrevScroll.setVisible(false);
        TextPreview.setVisible(false);
@@ -296,9 +278,7 @@ public class MainWindow extends javax.swing.JFrame {
       } catch (DataFormatException | IOException ex) {
        Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
       }
-     }
-     if (currFileName[currFileName.length - 1].contains(".png") || currFileName[currFileName.length - 1].contains(".jpg")) {
-      try {
+     } else if (currFileName[currFileName.length - 1].contains(".png") || currFileName[currFileName.length - 1].contains(".jpg")) {
        try (InputStream in = new ByteArrayInputStream(workWithData)) {
         BufferedImage image = ImageIO.read( in );
         PreviewLabel.setVisible(true);
@@ -306,13 +286,8 @@ public class MainWindow extends javax.swing.JFrame {
         TextPreview.setVisible(false);
         PreviewLabel.setText(null);
         PreviewLabel.setIcon(MiscUtils.getScaledImage(image));
-       }
-      } catch (IOException ex) {
-       Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-      }
-
-     }
-     if (currFileName[currFileName.length - 1].contains(".dds")) {
+       } catch (IOException ex) { Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex); }
+     } else if (currFileName[currFileName.length - 1].contains(".dds")) {
       PreviewLabel.setVisible(true);
       TextPrevScroll.setVisible(false);
       TextPreview.setVisible(false);
@@ -322,10 +297,7 @@ public class MainWindow extends javax.swing.JFrame {
      hexViewer.setData(new SimpleDataProvider(workWithData));
      hexViewer.setDefinitionStatus(DefinitionStatus.DEFINED);
      hexViewer.setEnabled(true);
-    } catch (IOException ex) {
-     Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-    }
-
+    } catch (IOException ex) { Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex); }
    }
   });
   PrintStream out = new CustomPrintStream(new TextAreaOutputStream(OutputTextArea));
@@ -337,7 +309,6 @@ public class MainWindow extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        fileChooser = new javax.swing.JFileChooser();
         jFrame1 = new javax.swing.JFrame();
         PopUpMessage = new javax.swing.JOptionPane();
         aboutWindow = new javax.swing.JFrame();
@@ -371,44 +342,42 @@ public class MainWindow extends javax.swing.JFrame {
         jMenuBar1 = new javax.swing.JMenuBar();
         FileMenu = new javax.swing.JMenu();
         jMenu4 = new javax.swing.JMenu();
-        OpenMAP = new javax.swing.JMenuItem();
-        OpenFARC = new javax.swing.JMenuItem();
-        OpenFAR4 = new javax.swing.JMenuItem();
+        openMAP = new javax.swing.JMenuItem();
+        openFARC = new javax.swing.JMenuItem();
+        openFAR4 = new javax.swing.JMenuItem();
         FileExportMenu = new javax.swing.JMenu();
         ExportTEXOptions = new javax.swing.JMenu();
-        ExportTEXtoPNG = new javax.swing.JMenuItem();
-        ExportTEXtoJPG = new javax.swing.JMenuItem();
-        ExportTEXtoDDS = new javax.swing.JMenuItem();
+        exportAsPNG = new javax.swing.JMenuItem();
+        exportAsJPG = new javax.swing.JMenuItem();
+        exportAsDDS = new javax.swing.JMenuItem();
         ExportMAPOptions = new javax.swing.JMenu();
-        MAPtoRLST = new javax.swing.JMenuItem();
+        exportAsRLST = new javax.swing.JMenuItem();
         PLANExportOptions = new javax.swing.JMenu();
-        PackagePLAN = new javax.swing.JMenuItem();
+        exportAsMOD = new javax.swing.JMenuItem();
         jSeparator6 = new javax.swing.JPopupMenu.Separator();
-        Exit = new javax.swing.JMenuItem();
+        closeApplication = new javax.swing.JMenuItem();
         jMenu5 = new javax.swing.JMenu();
-        AddFileToFARC = new javax.swing.JMenuItem();
+        addFileToFARC = new javax.swing.JMenuItem();
         jSeparator5 = new javax.swing.JPopupMenu.Separator();
         ExtractionOptions = new javax.swing.JMenu();
-        ExtractRaw = new javax.swing.JMenuItem();
-        ExtractDecompressed = new javax.swing.JMenuItem();
+        extractRaw = new javax.swing.JMenuItem();
+        extractDecompressed = new javax.swing.JMenuItem();
         ReplaceSelectedOptions = new javax.swing.JMenu();
-        ReplaceSelected = new javax.swing.JMenuItem();
-        ReplaceDecompressed = new javax.swing.JMenuItem();
+        replaceRaw = new javax.swing.JMenuItem();
+        replaceDecompressed = new javax.swing.JMenuItem();
         jMenu6 = new javax.swing.JMenu();
-        AddEntry = new javax.swing.JMenuItem();
-        RemoveEntry = new javax.swing.JMenuItem();
-        ZeroEntry = new javax.swing.JMenuItem();
+        addEntry = new javax.swing.JMenuItem();
+        removeEntry = new javax.swing.JMenuItem();
+        zeroEntry = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
-        ReverseBytes = new javax.swing.JMenuItem();
+        reverseBytes = new javax.swing.JMenuItem();
         jSeparator2 = new javax.swing.JPopupMenu.Separator();
-        PrintDependenciesButton = new javax.swing.JMenuItem();
+        printDependencies = new javax.swing.JMenuItem();
         jMenu3 = new javax.swing.JMenu();
-        InstallMod = new javax.swing.JMenuItem();
+        installMod = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
-        jMenuItem2 = new javax.swing.JMenuItem();
-        darkMode = new javax.swing.JCheckBoxMenuItem();
-        DEV = new javax.swing.JMenu();
-        DEV.setVisible(false);
+        openAboutFrame = new javax.swing.JMenuItem();
+        toggleDarcula = new javax.swing.JCheckBoxMenuItem();
 
         javax.swing.GroupLayout jFrame1Layout = new javax.swing.GroupLayout(jFrame1.getContentPane());
         jFrame1.getContentPane().setLayout(jFrame1Layout);
@@ -512,6 +481,7 @@ public class MainWindow extends javax.swing.JFrame {
         jSplitPane1.setDividerLocation(150);
 
         mapTree.setModel(null);
+        mapTree.setMaximumSize(new java.awt.Dimension(72, 60));
         MapPanel.setViewportView(mapTree);
 
         jSplitPane1.setLeftComponent(MapPanel);
@@ -612,9 +582,9 @@ public class MainWindow extends javax.swing.JFrame {
         EditorPanel.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {"Filename", null, null},
-                {"Time Created", null, null},
+                {"Timestamp", null, null},
                 {"Size", null, null},
-                {"Hash", null, null},
+                {"SHA1", null, null},
                 {"GUID", null, null}
             },
             new String [] {
@@ -648,30 +618,32 @@ public class MainWindow extends javax.swing.JFrame {
 
         jMenu4.setText("Load");
 
-        OpenMAP.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_MASK));
-        OpenMAP.setText(".MAP");
-        OpenMAP.addActionListener(new java.awt.event.ActionListener() {
+        openMAP.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_MASK));
+        openMAP.setText(".MAP");
+        openMAP.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                OpenMAPActionPerformed(evt);
+                openMAPActionPerformed(evt);
             }
         });
-        jMenu4.add(OpenMAP);
+        jMenu4.add(openMAP);
 
-        OpenFARC.setText(".FARC");
-        OpenFARC.addActionListener(new java.awt.event.ActionListener() {
+        openFARC.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.SHIFT_MASK));
+        openFARC.setText(".FARC");
+        openFARC.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                OpenFARCActionPerformed(evt);
+                openFARCActionPerformed(evt);
             }
         });
-        jMenu4.add(OpenFARC);
+        jMenu4.add(openFARC);
 
-        OpenFAR4.setText(".FAR4");
-        OpenFAR4.addActionListener(new java.awt.event.ActionListener() {
+        openFAR4.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.ALT_MASK));
+        openFAR4.setText(".FAR4");
+        openFAR4.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                OpenFAR4ActionPerformed(evt);
+                openFAR4ActionPerformed(evt);
             }
         });
-        jMenu4.add(OpenFAR4);
+        jMenu4.add(openFAR4);
 
         FileMenu.add(jMenu4);
 
@@ -681,126 +653,130 @@ public class MainWindow extends javax.swing.JFrame {
         ExportTEXOptions.setText(".TEX");
         ExportTEXOptions.setEnabled(false);
 
-        ExportTEXtoPNG.setText(".PNG");
-        ExportTEXtoPNG.addActionListener(new java.awt.event.ActionListener() {
+        exportAsPNG.setText(".PNG");
+        exportAsPNG.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ExportTEXtoPNGActionPerformed(evt);
+                exportAsPNGActionPerformed(evt);
             }
         });
-        ExportTEXOptions.add(ExportTEXtoPNG);
+        ExportTEXOptions.add(exportAsPNG);
 
-        ExportTEXtoJPG.setText(".JPG");
-        ExportTEXtoJPG.addActionListener(new java.awt.event.ActionListener() {
+        exportAsJPG.setText(".JPG");
+        exportAsJPG.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ExportTEXtoJPGActionPerformed(evt);
+                exportAsJPGActionPerformed(evt);
             }
         });
-        ExportTEXOptions.add(ExportTEXtoJPG);
+        ExportTEXOptions.add(exportAsJPG);
 
-        ExportTEXtoDDS.setText(".DDS");
-        ExportTEXtoDDS.addActionListener(new java.awt.event.ActionListener() {
+        exportAsDDS.setText(".DDS");
+        exportAsDDS.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ExportTEXtoDDSActionPerformed(evt);
+                exportAsDDSActionPerformed(evt);
             }
         });
-        ExportTEXOptions.add(ExportTEXtoDDS);
+        ExportTEXOptions.add(exportAsDDS);
 
         FileExportMenu.add(ExportTEXOptions);
 
         ExportMAPOptions.setText(".MAP");
         ExportMAPOptions.setEnabled(false);
 
-        MAPtoRLST.setText(".RLST");
-        MAPtoRLST.setEnabled(false);
-        MAPtoRLST.addActionListener(new java.awt.event.ActionListener() {
+        exportAsRLST.setText(".RLST");
+        exportAsRLST.setEnabled(false);
+        exportAsRLST.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                MAPtoRLSTActionPerformed(evt);
+                exportAsRLSTActionPerformed(evt);
             }
         });
-        ExportMAPOptions.add(MAPtoRLST);
+        ExportMAPOptions.add(exportAsRLST);
 
         FileExportMenu.add(ExportMAPOptions);
 
         PLANExportOptions.setText(".PLAN");
         PLANExportOptions.setEnabled(false);
 
-        PackagePLAN.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B, java.awt.event.InputEvent.CTRL_MASK));
-        PackagePLAN.setText("Mod Package");
-        PackagePLAN.addActionListener(new java.awt.event.ActionListener() {
+        exportAsMOD.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B, java.awt.event.InputEvent.CTRL_MASK));
+        exportAsMOD.setText("Mod Package");
+        exportAsMOD.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                PackagePLANActionPerformed(evt);
+                exportAsMODActionPerformed(evt);
             }
         });
-        PLANExportOptions.add(PackagePLAN);
+        PLANExportOptions.add(exportAsMOD);
 
         FileExportMenu.add(PLANExportOptions);
 
         FileMenu.add(FileExportMenu);
         FileMenu.add(jSeparator6);
 
-        Exit.setText("Exit");
-        Exit.addActionListener(new java.awt.event.ActionListener() {
+        closeApplication.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_Q, java.awt.event.InputEvent.CTRL_MASK));
+        closeApplication.setText("Exit");
+        closeApplication.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ExitActionPerformed(evt);
+                closeApplicationActionPerformed(evt);
             }
         });
-        FileMenu.add(Exit);
+        FileMenu.add(closeApplication);
 
         jMenuBar1.add(FileMenu);
 
         jMenu5.setText("FAR");
 
-        AddFileToFARC.setText("Add Files...");
-        AddFileToFARC.setEnabled(false);
-        AddFileToFARC.addActionListener(new java.awt.event.ActionListener() {
+        addFileToFARC.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_N, java.awt.event.InputEvent.SHIFT_MASK | java.awt.event.InputEvent.CTRL_MASK));
+        addFileToFARC.setText("Add Files...");
+        addFileToFARC.setEnabled(false);
+        addFileToFARC.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                AddFileToFARCActionPerformed(evt);
+                addFileToFARCActionPerformed(evt);
             }
         });
-        jMenu5.add(AddFileToFARC);
+        jMenu5.add(addFileToFARC);
         jMenu5.add(jSeparator5);
 
         ExtractionOptions.setText("Extract Selected...");
         ExtractionOptions.setEnabled(false);
 
-        ExtractRaw.setText("As-is");
-        ExtractRaw.addActionListener(new java.awt.event.ActionListener() {
+        extractRaw.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_E, java.awt.event.InputEvent.CTRL_MASK));
+        extractRaw.setText("As-is");
+        extractRaw.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ExtractRawActionPerformed(evt);
+                extractRawActionPerformed(evt);
             }
         });
-        ExtractionOptions.add(ExtractRaw);
+        ExtractionOptions.add(extractRaw);
 
-        ExtractDecompressed.setText("Decompressed");
-        ExtractDecompressed.addActionListener(new java.awt.event.ActionListener() {
+        extractDecompressed.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_E, java.awt.event.InputEvent.SHIFT_MASK | java.awt.event.InputEvent.CTRL_MASK));
+        extractDecompressed.setText("Decompressed");
+        extractDecompressed.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ExtractDecompressedActionPerformed(evt);
+                extractDecompressedActionPerformed(evt);
             }
         });
-        ExtractionOptions.add(ExtractDecompressed);
+        ExtractionOptions.add(extractDecompressed);
 
         jMenu5.add(ExtractionOptions);
 
         ReplaceSelectedOptions.setText("Replace Selected...");
         ReplaceSelectedOptions.setEnabled(false);
 
-        ReplaceSelected.setText("As-is");
-        ReplaceSelected.setEnabled(false);
-        ReplaceSelected.addActionListener(new java.awt.event.ActionListener() {
+        replaceRaw.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_R, java.awt.event.InputEvent.CTRL_MASK));
+        replaceRaw.setText("As-is");
+        replaceRaw.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ReplaceSelectedActionPerformed(evt);
+                replaceRawActionPerformed(evt);
             }
         });
-        ReplaceSelectedOptions.add(ReplaceSelected);
+        ReplaceSelectedOptions.add(replaceRaw);
 
-        ReplaceDecompressed.setText("Decompressed");
-        ReplaceDecompressed.setEnabled(false);
-        ReplaceDecompressed.addActionListener(new java.awt.event.ActionListener() {
+        replaceDecompressed.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_R, java.awt.event.InputEvent.SHIFT_MASK | java.awt.event.InputEvent.CTRL_MASK));
+        replaceDecompressed.setText("Decompressed");
+        replaceDecompressed.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ReplaceDecompressedActionPerformed(evt);
+                replaceDecompressedActionPerformed(evt);
             }
         });
-        ReplaceSelectedOptions.add(ReplaceDecompressed);
+        ReplaceSelectedOptions.add(replaceDecompressed);
 
         jMenu5.add(ReplaceSelectedOptions);
 
@@ -808,96 +784,96 @@ public class MainWindow extends javax.swing.JFrame {
 
         jMenu6.setText("MAP");
 
-        AddEntry.setText("Add Entry...");
-        AddEntry.setEnabled(false);
-        AddEntry.setFocusCycleRoot(true);
-        AddEntry.addActionListener(new java.awt.event.ActionListener() {
+        addEntry.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_N, java.awt.event.InputEvent.CTRL_MASK));
+        addEntry.setText("Add Entry...");
+        addEntry.setEnabled(false);
+        addEntry.setFocusCycleRoot(true);
+        addEntry.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                AddEntryActionPerformed(evt);
+                addEntryActionPerformed(evt);
             }
         });
-        jMenu6.add(AddEntry);
+        jMenu6.add(addEntry);
 
-        RemoveEntry.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0));
-        RemoveEntry.setText("Remove Entry");
-        RemoveEntry.setEnabled(false);
-        RemoveEntry.addActionListener(new java.awt.event.ActionListener() {
+        removeEntry.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0));
+        removeEntry.setText("Remove Entry");
+        removeEntry.setEnabled(false);
+        removeEntry.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                RemoveEntryActionPerformed(evt);
+                removeEntryActionPerformed(evt);
             }
         });
-        jMenu6.add(RemoveEntry);
+        jMenu6.add(removeEntry);
 
-        ZeroEntry.setText("Zero Entry");
-        ZeroEntry.setEnabled(false);
-        ZeroEntry.addActionListener(new java.awt.event.ActionListener() {
+        zeroEntry.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_Z, java.awt.event.InputEvent.CTRL_MASK));
+        zeroEntry.setText("Zero Entry");
+        zeroEntry.setEnabled(false);
+        zeroEntry.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ZeroEntryActionPerformed(evt);
+                zeroEntryActionPerformed(evt);
             }
         });
-        jMenu6.add(ZeroEntry);
+        jMenu6.add(zeroEntry);
 
         jMenuBar1.add(jMenu6);
 
         jMenu7.setText("Tools");
 
-        ReverseBytes.setText("Reverse Bytes...");
-        ReverseBytes.addActionListener(new java.awt.event.ActionListener() {
+        reverseBytes.setText("Reverse Bytes...");
+        reverseBytes.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ReverseBytesActionPerformed(evt);
+                reverseBytesActionPerformed(evt);
             }
         });
-        jMenu7.add(ReverseBytes);
+        jMenu7.add(reverseBytes);
         jMenu7.add(jSeparator2);
 
-        PrintDependenciesButton.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_P, java.awt.event.InputEvent.CTRL_MASK));
-        PrintDependenciesButton.setText("Print Dependencies");
-        PrintDependenciesButton.setEnabled(false);
-        PrintDependenciesButton.addActionListener(new java.awt.event.ActionListener() {
+        printDependencies.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_P, java.awt.event.InputEvent.CTRL_MASK));
+        printDependencies.setText("Print Dependencies");
+        printDependencies.setEnabled(false);
+        printDependencies.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                PrintDependenciesButtonActionPerformed(evt);
+                printDependenciesActionPerformed(evt);
             }
         });
-        jMenu7.add(PrintDependenciesButton);
+        jMenu7.add(printDependencies);
 
         jMenuBar1.add(jMenu7);
 
         jMenu3.setText("Mods");
 
-        InstallMod.setText("Install Mod...");
-        InstallMod.setEnabled(false);
-        InstallMod.addActionListener(new java.awt.event.ActionListener() {
+        installMod.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_M, java.awt.event.InputEvent.CTRL_MASK));
+        installMod.setText("Install Mod...");
+        installMod.setEnabled(false);
+        installMod.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                InstallModActionPerformed(evt);
+                installModActionPerformed(evt);
             }
         });
-        jMenu3.add(InstallMod);
+        jMenu3.add(installMod);
 
         jMenuBar1.add(jMenu3);
 
         HelpMenu.setText("Help");
 
-        jMenuItem2.setText("About");
-        jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
+        openAboutFrame.setText("About");
+        openAboutFrame.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem2ActionPerformed(evt);
+                openAboutFrameActionPerformed(evt);
             }
         });
-        HelpMenu.add(jMenuItem2);
+        HelpMenu.add(openAboutFrame);
 
-        darkMode.setSelected(true);
-        darkMode.setText("Dark Mode");
-        darkMode.addActionListener(new java.awt.event.ActionListener() {
+        toggleDarcula.setSelected(true);
+        toggleDarcula.setText("Darcula");
+        toggleDarcula.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                darkModeActionPerformed(evt);
+                toggleDarculaActionPerformed(evt);
             }
         });
-        HelpMenu.add(darkMode);
+        HelpMenu.add(toggleDarcula);
 
         jMenuBar1.add(HelpMenu);
-
-        DEV.setText("*DEV*");
-        jMenuBar1.add(DEV);
 
         setJMenuBar(jMenuBar1);
 
@@ -917,30 +893,22 @@ public class MainWindow extends javax.swing.JFrame {
 
 
  private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
-
-
+     // I don't even know what this is for, and I'm too lazy to look into it, so here it stays! //
  }//GEN-LAST:event_formWindowClosed
 
- private void PrintDependenciesButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PrintDependenciesButtonActionPerformed
-  if (MAP == null) {
-   showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-   return;
-  }
-  if (FARC == null) {
-   showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-   return;
-  }
+ private void printDependenciesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_printDependenciesActionPerformed
+  if (MAP == null) { showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this."); return; }
+  if (FARC == null) { showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this."); return; }
   try {
    for (int pathCount = 0; pathCount < currSHA1.length; pathCount++) {
     if (currFileName[pathCount] == null) continue;
-    byte[] bytesToRead = FarcUtils.pullFromFarc(currSHA1[pathCount], FARC);
+    byte[] bytesToRead = FarUtils.pullFromFarc(currSHA1[pathCount], FARC, false);
     ByteArrayInputStream fileAccess = new ByteArrayInputStream(bytesToRead);
     fileAccess.skip(8);
     //Get dependencies offset
     byte[] offsetDependenciesByte = new byte[4];
     fileAccess.read(offsetDependenciesByte);
     int offsetDependencies = Integer.parseInt(MiscUtils.byteArrayToHexString(offsetDependenciesByte), 16);
-    //System.out.println("Dependencies offset in hex: " + MiscUtils.byteArrayToHexString(offsetDependenciesByte));
     System.out.println("Dependencies offset: " + offsetDependencies);
 
     fileAccess.skip(offsetDependencies - 12);
@@ -960,405 +928,137 @@ public class MainWindow extends javax.swing.JFrame {
 
     for (int i = 0; i < dependenciesCount; i++) {
      fileAccess.read(dependencyKindByte);
-     if (dependencyKindByte[0] == 0x01) {
-      fileAccess.skip(20); //sha1
-      fileAccess.skip(4);
-     }
+     if (dependencyKindByte[0] == 0x01) fileAccess.skip(24); 
      if (dependencyKindByte[0] == 0x02) {
       fileAccess.read(dependencyGUIDByte);
       dependencyGUID = Integer.parseInt(MiscUtils.byteArrayToHexString(dependencyGUIDByte), 16);
-
       fileAccess.read(dependencyTypeByte);
       dependencyType = Integer.parseInt(MiscUtils.byteArrayToHexString(dependencyTypeByte), 16);
       String fileNameNew = MiscUtils.getFileNameFromGUID(MiscUtils.byteArrayToHexString(dependencyGUIDByte), MAP);
-      if (fileNameNew.contains("Error")) {
-       levelFail = true;
-      }
+      if (fileNameNew.contains("Error")) levelFail = true;
       System.out.println((i + 1) + ": " + fileNameNew + " | " + "g" + dependencyGUID + " | " + dependencyType);
      }
-
     }
-    if (levelFail == true) {
-     System.out.println("ERROR! The level contains at least one dependency that does not exist. You will have problems.");
-    }
-
+    if (levelFail) System.out.println("ERROR! The level contains at least one dependency that does not exist. You will have problems.");
    }
-  } catch (IOException ex) {
-   Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-  }
- }//GEN-LAST:event_PrintDependenciesButtonActionPerformed
+  } catch (IOException ex) { Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex); }
+ }//GEN-LAST:event_printDependenciesActionPerformed
 
- private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
+ private void openAboutFrameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openAboutFrameActionPerformed
   aboutWindow.setVisible(true);
- }//GEN-LAST:event_jMenuItem2ActionPerformed
+ }//GEN-LAST:event_openAboutFrameActionPerformed
 
- private void ExtractRawActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExtractRawActionPerformed
+ private void extractRawActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_extractRawActionPerformed
+   extract(false);
+ }//GEN-LAST:event_extractRawActionPerformed
+
+ private void exportTEX(String type) {
   if (FAR4 == null) {
-   if (MAP == null) {
-    showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-    return;
-   }
-   if (FARC == null) {
-    showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-    return;
-   }
+   if (MAP == null) { showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this."); return; }
+   if (FARC == null) { showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this."); return; }
   }
-  File outputFile;
+  
+  File file = null;
   String outputFileName;
+  String selectedDirectory = "";
 
-  fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
   if (currSHA1.length == 1) {
-   outputFileName = currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1);
-   outputFile = new File(outputFileName);
-   fileChooser.setSelectedFile(outputFile);
-  } else {
-   fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-
-  }
-
-  fileChooser.setFileFilter(null);
-  int returnVal = fileChooser.showSaveDialog(this);
-
-  if (returnVal != JFileChooser.APPROVE_OPTION) {
-   System.out.println("File access cancelled by user.");
-   return;
-  }
+   outputFileName = currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1) + "." + type;
+   file = fileDialogue.openFile(outputFileName, "", "", true);
+   if (file == null) { System.out.println("File access cancelled by user."); return; }
+   } else {
+      selectedDirectory = fileDialogue.openDirectory();
+      if (selectedDirectory == null || selectedDirectory.isEmpty()) { System.out.println("File access cancelled by user."); return; }
+   }
 
   for (int pathCount = 0; pathCount < currSHA1.length; pathCount++) {
    if (currFileName[pathCount] == null) continue;
-   byte[] bytesToSave;
-   if (FAR4 == null)
-    bytesToSave = FarcUtils.pullFromFarc(currSHA1[pathCount], FARC);
-   else
-    bytesToSave = FarcUtils.pullFromFAR4(currFileName[pathCount].split("[.]")[0], currSize[pathCount], FAR4);
+   if (!currFileName[pathCount].contains(".tex")) continue;
    
-   if (bytesToSave == null) return;
-
-   if (currSHA1.length == 1) outputFile = fileChooser.getSelectedFile();
-   else {
-    outputFileName = fileChooser.getSelectedFile().getAbsolutePath();
-    System.out.println(outputFileName);
-    outputFileName = outputFileName + "\\" + currFileName[pathCount].substring(currFileName[pathCount].lastIndexOf("/") + 1);
-    System.out.println(outputFileName);
-    outputFile = new File(outputFileName);
-   }
-   System.out.println("Attempting to extract now!");
-
-   try (FileOutputStream fos = new FileOutputStream(outputFile)) {
-    fos.write(bytesToSave);
-   } catch (IOException ex) {}
-  }
-  fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
- }//GEN-LAST:event_ExtractRawActionPerformed
-
- private void ExportTEXtoPNGActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportTEXtoPNGActionPerformed
-  if (FAR4 == null) {
-   if (MAP == null) {
-    showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-    return;
-   }
-   if (FARC == null) {
-    showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-    return;
-   }
-  }
-  File outputFile;
-  String outputFileName;
-
-  fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
-  if (currSHA1.length == 1) {
-   outputFileName = currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1) + ".png";
-   outputFile = new File(outputFileName);
-   fileChooser.setSelectedFile(outputFile);
-  } else {
-   fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-
-  }
-
-  fileChooser.setFileFilter(null);
-  int returnVal = fileChooser.showSaveDialog(this);
-
-  if (returnVal != JFileChooser.APPROVE_OPTION) {
-   System.out.println("File access cancelled by user.");
-   return;
-  }
-
-  for (int pathCount = 0; pathCount < currSHA1.length; pathCount++) {
-   if (currFileName[pathCount] == null) continue;
-   if (!currFileName[pathCount].contains(".tex")) {
-    System.out.println("This is not a .TEX file!");
-    continue;
-   }
    try {
     byte[] bytesToSave;
-    if (FAR4 == null)
-     bytesToSave = FarcUtils.pullFromFarc(currSHA1[pathCount], FARC);
-    else
-     bytesToSave = FarcUtils.pullFromFAR4(currFileName[pathCount].split("[.]")[0], currSize[pathCount], FAR4);
-    if (currSHA1.length == 1) outputFile = fileChooser.getSelectedFile();
-    else {
-     outputFileName = fileChooser.getSelectedFile().getAbsolutePath();
+    if (FAR4 == null) bytesToSave = FarUtils.pullFromFarc(currSHA1[pathCount], FARC, false);
+    else bytesToSave = FarUtils.pullFromFAR4(currFileName[pathCount].split("[.]")[0], currSize[pathCount], FAR4);
+    if (currSHA1.length != 1)
+    {
+     outputFileName = selectedDirectory;
      outputFileName = outputFileName + "\\" + currFileName[pathCount].substring(currFileName[pathCount].lastIndexOf("/") + 1);
-     outputFileName = outputFileName.substring(0, outputFileName.length() - 4) + ".png";
-     System.out.println(outputFileName);
-     outputFile = new File(outputFileName);
+     outputFileName = outputFileName.substring(0, outputFileName.length() - 4) + "." + type;
+     file = new File(outputFileName);
     }
-    System.out.println("Attempting to extract now!");
 
-    byte[] buffer = ZlibUtils.decompressThis(bytesToSave);
-    MiscUtils.DDStoStandard(buffer, "png", outputFile);
+    byte[] buffer = ZlibUtils.decompressThis(bytesToSave, false);
+    if (type == "png" || type == "jpg") MiscUtils.DDStoStandard(buffer, type, file);
+    else { FileOutputStream fos = new FileOutputStream(file); fos.write(bytesToSave); fos.close(); }
    } catch (DataFormatException | IOException | NullPointerException ex) {
     Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
    }
-
   }
-  fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
- }//GEN-LAST:event_ExportTEXtoPNGActionPerformed
+  System.out.println("Textures have succesfully been exported.");  
+ }
+ 
+ private void exportAsPNGActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportAsPNGActionPerformed
+   exportTEX("png");
+ }//GEN-LAST:event_exportAsPNGActionPerformed
 
- private void ExportTEXtoDDSActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportTEXtoDDSActionPerformed
-  if (FAR4 == null) {
-   if (MAP == null) {
-    showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-    return;
-   }
-   if (FARC == null) {
-    showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-    return;
-   }
-  }
-  File outputFile;
-  String outputFileName;
+ private void exportAsDDSActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportAsDDSActionPerformed
+  exportTEX("dds");
+ }//GEN-LAST:event_exportAsDDSActionPerformed
 
-  fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
-  if (currSHA1.length == 1) {
-   outputFileName = currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1) + ".dds";
-   outputFile = new File(outputFileName);
-   fileChooser.setSelectedFile(outputFile);
-  } else {
-   fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+ private void exportAsJPGActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportAsJPGActionPerformed
+  exportTEX("jpg");
+ }//GEN-LAST:event_exportAsJPGActionPerformed
 
-  }
-
-  fileChooser.setFileFilter(null);
-  int returnVal = fileChooser.showSaveDialog(this);
-
-  if (returnVal != JFileChooser.APPROVE_OPTION) {
-   System.out.println("File access cancelled by user.");
-   return;
-  }
-
-  for (int pathCount = 0; pathCount < currSHA1.length; pathCount++) {
-   if (currFileName[pathCount] == null) continue;
-   if (!currFileName[pathCount].contains(".tex")) {
-    System.out.println("This is not a .TEX file!");
-    continue;
-   }
-   try {
-    byte[] bytesToSave;
-    if (FAR4 == null)
-     bytesToSave = ZlibUtils.decompressThis(FarcUtils.pullFromFarc(currSHA1[pathCount], FARC));
-    else
-     bytesToSave = ZlibUtils.decompressThis(FarcUtils.pullFromFAR4(currFileName[pathCount].split("[.]")[0], currSize[pathCount], FAR4));
-
-    if (currSHA1.length == 1) outputFile = fileChooser.getSelectedFile();
-    else {
-     outputFileName = fileChooser.getSelectedFile().getAbsolutePath();
-     System.out.println(outputFileName);
-     outputFileName = outputFileName + "\\" + currFileName[pathCount].substring(currFileName[pathCount].lastIndexOf("/") + 1);
-     outputFileName = outputFileName.substring(0, outputFileName.length() - 4) + ".dds";
-     System.out.println(outputFileName);
-     outputFile = new File(outputFileName);
-    }
-    System.out.println("Attemping to extract now!");
-
-    FileOutputStream fos = new FileOutputStream(outputFile);
-    fos.write(bytesToSave);
-
-   } catch (FileNotFoundException ex) {
-    Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-   } catch (IOException ex) {
-    Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-   } catch (DataFormatException ex) {
-    Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-   }
-  }
-  fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
- }//GEN-LAST:event_ExportTEXtoDDSActionPerformed
-
- private void ExportTEXtoJPGActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportTEXtoJPGActionPerformed
-  if (FAR4 == null) {
-   if (MAP == null) {
-    showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-    return;
-   }
-   if (FARC == null) {
-    showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-    return;
-   }
-  }
-  File outputFile;
-  String outputFileName;
-
-  fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
-  if (currSHA1.length == 1) {
-   outputFileName = currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1) + ".jpg";
-   outputFile = new File(outputFileName);
-   fileChooser.setSelectedFile(outputFile);
-  } else {
-   fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-
-  }
-
-  fileChooser.setFileFilter(null);
-  int returnVal = fileChooser.showSaveDialog(this);
-
-  if (returnVal != JFileChooser.APPROVE_OPTION) {
-   System.out.println("File access cancelled by user.");
-   return;
-  }
-
-  for (int pathCount = 0; pathCount < currSHA1.length; pathCount++) {
-   if (currFileName[pathCount] == null) continue;
-   if (!currFileName[pathCount].contains(".tex")) {
-    System.out.println("This is not a .TEX file!");
-    continue;
-   }
-   try {
-    byte[] bytesToSave;
-    if (FAR4 == null)
-     bytesToSave = FarcUtils.pullFromFarc(currSHA1[pathCount], FARC);
-    else
-     bytesToSave = FarcUtils.pullFromFAR4(currFileName[pathCount].split("[.]")[0], currSize[pathCount], FAR4);
-
-    if (currSHA1.length == 1) outputFile = fileChooser.getSelectedFile();
-    else {
-     outputFileName = fileChooser.getSelectedFile().getAbsolutePath();
-     System.out.println(outputFileName);
-     outputFileName = outputFileName + "\\" + currFileName[pathCount].substring(currFileName[pathCount].lastIndexOf("/") + 1);
-     outputFileName = outputFileName.substring(0, outputFileName.length() - 4) + ".jpg";
-     System.out.println(outputFileName);
-     outputFile = new File(outputFileName);
-    }
-    System.out.println("Attempting to extract now!");
-
-    MiscUtils.DDStoStandard(ZlibUtils.decompressThis(bytesToSave), "jpg", outputFile);
-   } catch (DataFormatException | IOException | NullPointerException ex) {
-    Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-   }
-
-  }
-  fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
- }//GEN-LAST:event_ExportTEXtoJPGActionPerformed
-
- private void ExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExitActionPerformed
-  System.out.println("Shutting down. Goodbye!");
+ private void closeApplicationActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_closeApplicationActionPerformed
+  System.out.println("Well, I guess it's time for a nap.");
   System.exit(0);
- }//GEN-LAST:event_ExitActionPerformed
+ }//GEN-LAST:event_closeApplicationActionPerformed
 
- private void OpenFARCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenFARCActionPerformed
-  if (MAP == null) {
-   showUserDialog("Warning", "Please keep in mind, opening a .FARC file alone will not display anything within farctool2. A .MAP file is required for most functions.");
-  }
-  fileChooser.setFileFilter(null);
-  fileChooser.setAcceptAllFileFilterUsed(false);
-  FileFilter ff = new FileFilter() {
-   @Override
-   public boolean accept(File f) {
-    if (f.isDirectory()) {
-     return true;
-    } else if (f.getName().endsWith(".farc")) {
-     return true;
-    } else {
-     return false;
-    }
-   }
-
-   @Override
-   public String getDescription() {
-    return "FARC Files";
-   }
-  };
-  fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
-  fileChooser.setFileFilter(ff);
-  fileChooser.setAcceptAllFileFilterUsed(true);
-  int returnVal = fileChooser.showOpenDialog(this);
-  if (returnVal == JFileChooser.APPROVE_OPTION) {
-   FARC = fileChooser.getSelectedFile();
-   System.out.println("Sucessfully opened " + FARC.getName());
-   enableFARCMenus();
-   if (FAR4 != null) {
+ private void openFARCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openFARCActionPerformed
+  if (MAP == null) showUserDialog("Warning", "Please keep in mind, opening a .FARC file alone will not display anything within farctool2. A .MAP file is required for most functions.");
+  File[] newFARCs = fileDialogue.openFiles(".FARC", "FARC Files");
+  if (newFARCs == null) { System.out.println("File access cancelled by user."); return; }
+  else FARC = newFARCs;
+  String printStatement = "Successfully opened FARCs: ";
+  for (int i = 0; i < FARC.length; i++) printStatement += FARC[i].getName() + " ";
+  System.out.println(printStatement);
+  enableFARCMenus();
+  if (FAR4 != null) {
     FAR4 = null;
     this.mapTree.setModel(null);
     this.mapTree.updateUI();
-   }
   }
-  fileChooser.removeChoosableFileFilter(ff);
- }//GEN-LAST:event_OpenFARCActionPerformed
+ }//GEN-LAST:event_openFARCActionPerformed
 
- private void OpenMAPActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenMAPActionPerformed
-  System.out.println("A haiku for the impatient:\n" +
+ private void openMAPActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMAPActionPerformed
+   File newMAP = fileDialogue.openFile("", ".MAP", "MAP Files", false);
+   if (newMAP == null) { System.out.println("File access cancelled by user."); return; }
+   else MAP = newMAP;
+   System.out.println("Sucessfully opened " + MAP.getName());
+   System.out.println("A haiku for the impatient:\n" +
    "Map parsing takes time.\n" +
    "I might freeze, I have not crashed.\n" +
    "Wait, please bear with me!");
-  fileChooser.setAcceptAllFileFilterUsed(false);
-  FileFilter ff = new FileFilter() {
-   @Override
-   public boolean accept(File f) {
-    if (f.isDirectory()) {
-     return true;
-    } else if (f.getName().endsWith(".map")) {
-     return true;
-    } else {
-     return false;
-    }
-   }
 
-   @Override
-   public String getDescription() {
-    return "Map Files";
-   }
-  };
-  fileChooser.setFileFilter(ff);
-  fileChooser.setAcceptAllFileFilterUsed(true);
-  fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
-  int returnVal = fileChooser.showOpenDialog(this);
-  if (returnVal == JFileChooser.APPROVE_OPTION) {
-   MAP = fileChooser.getSelectedFile();
-   System.out.println("Sucessfully opened " + MAP.getName());
-
-   MapParser self = new MapParser();
+   MapUtils self = new MapUtils();
    DefaultMutableTreeNode root = new DefaultMutableTreeNode(MAP.getName());
+   
    mapTree.setModel(null);
    DefaultTreeModel model = self.parseMapIntoMemory(root, MAP);
-
    mapTree.setModel(model);
-
+   
    enableMAPMenus();
    FAR4 = null;
+ }//GEN-LAST:event_openMAPActionPerformed
 
-   //self.loadMap(file);
-   //self.printHtml(System.out);
-  } else {
-   System.out.println("...nevermind, you cancelled!");
-  }
-  fileChooser.removeChoosableFileFilter(ff);
- }//GEN-LAST:event_OpenMAPActionPerformed
-
- private void AddEntryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddEntryActionPerformed
-
-  if (MAP == null) {
-   showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-   return;
-  }
+ private void addEntryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addEntryActionPerformed
+  if (MAP == null) { showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this."); return; }
   EntryAdditionWindow EntryWindow = new EntryAdditionWindow(this);
   EntryWindow.setVisible(true);
- }//GEN-LAST:event_AddEntryActionPerformed
+ }//GEN-LAST:event_addEntryActionPerformed
 
- private void ZeroEntryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ZeroEntryActionPerformed
-  if (MAP == null) {
-   showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-   return;
-  }
+ private void zeroEntryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_zeroEntryActionPerformed
+  if (MAP == null) { showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this."); return; }
   for (int pathCount = 0; pathCount < currFileName.length; pathCount++) {
    if (currFileName[pathCount] == null) continue;
    KMPMatch matcher = new KMPMatch();
@@ -1382,19 +1082,13 @@ public class MainWindow extends javax.swing.JFrame {
     byte buffer[] = new byte[28];
     mapAccess.write(buffer, 0, 28);
     mapAccess.close();
-
-
-    System.out.println("Successfully zeroed entry!");
    } catch (Exception e) {}
   }
- }//GEN-LAST:event_ZeroEntryActionPerformed
+  System.out.println("Successfully zeroed entries.");
+ }//GEN-LAST:event_zeroEntryActionPerformed
 
- private void RemoveEntryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RemoveEntryActionPerformed
-  if (MAP == null) {
-   showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-   return;
-  }
-
+ private void removeEntryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeEntryActionPerformed
+  if (MAP == null) { showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this."); return; }
   for (int pathCount = 0; pathCount < currFileName.length; pathCount++) {
    if (currFileName[pathCount] == null) continue;
    DefaultMutableTreeNode node = (DefaultMutableTreeNode) selectedPaths[pathCount].getLastPathComponent();
@@ -1467,234 +1161,173 @@ public class MainWindow extends javax.swing.JFrame {
 
 
    } catch (Exception e) {}
-   System.out.println("Successfully removed file!");
   }
- }//GEN-LAST:event_RemoveEntryActionPerformed
+  System.out.println("Successfully removed entries.");
+ }//GEN-LAST:event_removeEntryActionPerformed
 
- private void ExtractDecompressedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExtractDecompressedActionPerformed
+ private void extract(boolean decompress) {
   if (FAR4 == null) {
-   if (MAP == null) {
-    showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-    return;
-   }
-   if (FARC == null) {
-    showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-    return;
-   }
+   if (MAP == null) { showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this."); return; }
+   if (FARC == null) { showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this."); return; }
   }
-  File outputFile;
+  
+  File file = null;
   String outputFileName;
-
-  fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
+  String selectedDirectory = "";
+  
   if (currSHA1.length == 1) {
    outputFileName = currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1);
-   outputFile = new File(outputFileName);
-   fileChooser.setSelectedFile(outputFile);
+   file = fileDialogue.openFile(outputFileName, "", "", true);
+   if (file == null) { System.out.println("File access cancelled by user."); return; }
   } else {
-   fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-
-  }
-
-  fileChooser.setFileFilter(null);
-  int returnVal = fileChooser.showSaveDialog(this);
-
-  if (returnVal != JFileChooser.APPROVE_OPTION) {
-   System.out.println("File access cancelled by user.");
-   return;
+      selectedDirectory = fileDialogue.openDirectory();
+      if (selectedDirectory == null || selectedDirectory.isEmpty()) { System.out.println("File access cancelled by user."); return; }
   }
 
   for (int pathCount = 0; pathCount < currSHA1.length; pathCount++) {
    if (currFileName[pathCount] == null) continue;
    byte[] bytesToSave = null;
    try {
-    if (FAR4 == null)
-     bytesToSave = ZlibUtils.decompressThis(FarcUtils.pullFromFarc(currSHA1[pathCount], FARC));
+    if (FAR4 == null) 
+    {
+        if (decompress) bytesToSave = ZlibUtils.decompressThis(FarUtils.pullFromFarc(currSHA1[pathCount], FARC, false), false);
+        else bytesToSave = FarUtils.pullFromFarc(currSHA1[pathCount], FARC, false);
+    }
     else
-     bytesToSave = ZlibUtils.decompressThis(FarcUtils.pullFromFAR4(currFileName[pathCount].split("[.]")[0], currSize[pathCount], FAR4));
-   } catch (DataFormatException ex) {
-    Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-   }
+    {
+        if (decompress) bytesToSave = ZlibUtils.decompressThis(FarUtils.pullFromFAR4(currFileName[pathCount].split("[.]")[0], currSize[pathCount], FAR4), false);
+        else bytesToSave = FarUtils.pullFromFAR4(currFileName[pathCount].split("[.]")[0], currSize[pathCount], FAR4);
+    }
+   } catch (DataFormatException ex) { Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex); }
 
-   if (currSHA1.length == 1) outputFile = fileChooser.getSelectedFile();
-   else {
-    outputFileName = fileChooser.getSelectedFile().getAbsolutePath();
-    System.out.println(outputFileName);
+   if (currSHA1.length != 1) {
+    outputFileName = selectedDirectory;
     outputFileName = outputFileName + "\\" + currFileName[pathCount].substring(currFileName[pathCount].lastIndexOf("/") + 1);
-    if (outputFileName.contains(".tex"))
-     outputFileName = outputFileName.substring(0, outputFileName.length() - 4) + ".dds";
-    System.out.println(outputFileName);
-    outputFile = new File(outputFileName);
+    if (decompress)
+    {
+       if (outputFileName.contains(".tex")) outputFileName = outputFileName.substring(0, outputFileName.length() - 4) + ".dds";   
+    }
+    file = new File(outputFileName);
    }
-   System.out.println("Attempting to extract now!");
 
-   try (FileOutputStream fos = new FileOutputStream(outputFile)) {
-    fos.write(bytesToSave);
-   } catch (IOException ex) {}
+   try (FileOutputStream fos = new FileOutputStream(file)) { fos.write(bytesToSave); } 
+   catch (IOException ex) {}
   }
-  fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
- }//GEN-LAST:event_ExtractDecompressedActionPerformed
+  System.out.println("Files have succesfully been extracted.");
+ }
+ private void extractDecompressedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_extractDecompressedActionPerformed
+   extract(true);
+ }//GEN-LAST:event_extractDecompressedActionPerformed
 
- private void ReplaceSelectedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ReplaceSelectedActionPerformed
-  if (FARC == null && FAR4 == null) {
-   showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-   return;
-  }
-
-  fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
-  fileChooser.setFileFilter(null);
-  fileChooser.setFileFilter(fileChooser.getAcceptAllFileFilter());
-  int returnVal = fileChooser.showOpenDialog(this);
-
-  if (returnVal == JFileChooser.APPROVE_OPTION) {
-   try {
-    File newFile = fileChooser.getSelectedFile();
-    System.out.println("Sucessfully opened " + newFile.getName());
-    System.out.println("Attempting to inject " + newFile.getName() + " into " + FARC.getName());
+ private void replaceRawActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_replaceRawActionPerformed
+  if (FARC == null && FAR4 == null) { showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this."); return; }
+  if (IPReSHA1 != null) { System.out.println("Replacement of files in littlefart files is currently not functional due to the encryption of the IPRe."); return; }
+  File file = fileDialogue.openFile("", "", "", false);
+  if (file == null) { System.out.println("File access cancelled by user."); return; }
+  try {
     if (FAR4 == null) {
-     FarcUtils.addFile(newFile, FARC);
-     byte[] SHA1 = MiscUtils.getSHA1(newFile);
+     File[] selectedFARCs = getSelectedFARCs();
+     if (selectedFARCs == null) { System.out.println("File access cancelled by user."); return; }
+     FarUtils.addFile(file, selectedFARCs);
+     byte[] SHA1 = MiscUtils.getSHA1(file);
      String fileName = "";
      for (int pathCount = 0; pathCount < currSHA1.length; pathCount++) {
       if (currFileName[pathCount] == null) continue;
       fileName = currFileName[pathCount];
-      if (currFileName[pathCount].contains(".tex") && !newFile.getName().contains(".tex")) {
+      if (currFileName[pathCount].contains(".tex") && !file.getName().contains(".tex")) {
        if (fileName != null) {
         fileName = fileName.substring(0, fileName.length() - 3);
        }
-       if (newFile.getName() != null) {
-        String path = newFile.getName();
+       if (file.getName() != null) {
+        String path = file.getName();
         String[] paths = path.split("[.]");
         fileName += paths[paths.length - 1];
        }
       }
-      System.out.println(currGUID[pathCount]);
-      MiscUtils.replaceEntryByGUID(currGUID[pathCount], fileName, Integer.toHexString((int) newFile.length()), MiscUtils.byteArrayToHexString(SHA1), this);
+      MiscUtils.replaceEntryByGUID(currGUID[pathCount], fileName, Integer.toHexString((int) file.length()), MiscUtils.byteArrayToHexString(SHA1), this);
      }
     }
-    System.out.println("File successfully replaced!");
-   } catch (Exception ex) {
-    Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-   }
-   ((DefaultTreeModel) mapTree.getModel()).reload((DefaultMutableTreeNode) mapTree.getModel().getRoot());
-   mapTree.updateUI();
-  }
- }//GEN-LAST:event_ReplaceSelectedActionPerformed
-
- private void AddFileToFARCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddFileToFARCActionPerformed
-  if (FARC == null) {
-   showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-   return;
-  }
-
-  fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
-  fileChooser.setFileFilter(null);
-  fileChooser.setFileFilter(fileChooser.getAcceptAllFileFilter());
-  fileChooser.setMultiSelectionEnabled(true);
-  int returnVal = fileChooser.showOpenDialog(this);
-
-  if (returnVal == JFileChooser.APPROVE_OPTION) {
-   try {
-    File[] newFiles = fileChooser.getSelectedFiles();
-    for (int i = 0; i < newFiles.length; i++) {
-     System.out.println("Sucessfully opened " + newFiles[i].getName());
-     System.out.println("Attempting to inject " + newFiles[i].getName() + " into " + FARC.getName());
-     FarcUtils.addFile(newFiles[i], FARC);
+    else
+    {
+        FileInputStream fis = new FileInputStream(file); byte[] data = fis.readAllBytes(); fis.close();
+        for (int pathCount = 0; pathCount < currSHA1.length; pathCount++) FarUtils.rebuildFAR4(this, currSHA1[pathCount], data);
     }
    } catch (Exception ex) {
     Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
    }
-  }
-  fileChooser.setMultiSelectionEnabled(false);
- }//GEN-LAST:event_AddFileToFARCActionPerformed
-
- private void InstallModActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_InstallModActionPerformed
-  if (FARC == null) {
-   showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-   return;
-  }
-  if (MAP == null) {
-   showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-   return;
-  }
-  FileFilter ff = new FileFilter() {
-   @Override
-   public boolean accept(File f) {
-    if (f.isDirectory()) {
-     return true;
-    } else if (f.getName().endsWith(".xml")) {
-     return true;
-    } else {
-     return false;
-    }
+   if (FAR4 == null)
+   {
+      ((DefaultTreeModel) mapTree.getModel()).reload((DefaultMutableTreeNode) mapTree.getModel().getRoot());
+      mapTree.updateUI();   
    }
+   else FarUtils.openFAR4(this);
+   System.out.println("Files have succesfully been replaced.");
+ }//GEN-LAST:event_replaceRawActionPerformed
 
-   @Override
-   public String getDescription() {
-    return "XML Files";
-   }
-  };
-  fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
-  fileChooser.removeChoosableFileFilter(fileChooser.getAcceptAllFileFilter());
-  fileChooser.setFileFilter(ff);
-  int returnVal = fileChooser.showOpenDialog(this);
-  if (returnVal == JFileChooser.APPROVE_OPTION) {
-   try {
-    File modInfo = fileChooser.getSelectedFile();
+ private void addFileToFARCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addFileToFARCActionPerformed
+  if (FARC == null) { showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this."); return; }
+  File[] files = fileDialogue.openFiles("", "");
+  if (files == null || files.length == 0) { System.out.println("File access cancelled by user."); return; }
+  File[] SelectedFARCs = getSelectedFARCs();
+  if (SelectedFARCs == null) { System.out.println("File access cancelled by user."); return; }
+  try { for (int i = 0; i < files.length; i++) FarUtils.addFile(files[i], SelectedFARCs); } 
+  catch (Exception ex) { Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex); }
+  System.out.println("Files have successfully been added to the FARC.");
+ }//GEN-LAST:event_addFileToFARCActionPerformed
+
+ public File[] getSelectedFARCs()
+ {
+     if (FARC.length > 1)
+     {
+        FARChooser farChooser = new FARChooser(this, true);
+        farChooser.setTitle("FAR Chooser");
+        return farChooser.getSelected();   
+     }
+     return FARC;
+ }
+ 
+ private void installModActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_installModActionPerformed
+  if (FARC == null) { showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this."); return; }
+  if (MAP == null) { showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this."); return; }
+  try {
+    File modInfo = fileDialogue.openFile("", ".XML", "XML Files", false);
+    if (modInfo == null) { System.out.println("File access cancelled by user."); return; } 
+    File[] selectedFARCs = getSelectedFARCs();
+    if (selectedFARCs == null) { System.out.println("File access cancelled by user."); return; }
     DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
     DocumentBuilder dBuilder;
     dBuilder = dbFactory.newDocumentBuilder();
     Document mod = dBuilder.parse(modInfo);
     mod.getDocumentElement().normalize();
-    String directory = fileChooser.getSelectedFile().getParent() + "/";
-
-    ModInstaller installer = new ModInstaller(mod, directory, this);
-   } catch (ParserConfigurationException | SAXException | IOException ex) {
+    String directory = modInfo.getParent() + "/";
+    ModInstaller installer = new ModInstaller(mod, directory, selectedFARCs, this);
+  } catch (ParserConfigurationException | SAXException | IOException ex) {
     Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-   }
   }
- }//GEN-LAST:event_InstallModActionPerformed
+ }//GEN-LAST:event_installModActionPerformed
 
- private void ReverseBytesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ReverseBytesActionPerformed
-  fileChooser.setFileFilter(fileChooser.getAcceptAllFileFilter());
-  int returnVal = fileChooser.showOpenDialog(this);
+ private void reverseBytesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_reverseBytesActionPerformed
+     try {
+         File file = fileDialogue.openFile("", "", "", false);
+         if (file == null) { System.out.println("File access cancelled by user."); return; }
+         MiscUtils.reverseBytes(file);
+     } catch (IOException ex) {
+         Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+     }
+ }//GEN-LAST:event_reverseBytesActionPerformed
 
-  if (returnVal == JFileChooser.APPROVE_OPTION) {
-   try {
-    File newFile = fileChooser.getSelectedFile();
-    MiscUtils.reverseBytes(newFile);
-   } catch (IOException ex) {
-    Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-   }
-  }
- }//GEN-LAST:event_ReverseBytesActionPerformed
-
- private void PackagePLANActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PackagePLANActionPerformed
-  if (FARC == null) {
-   showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-   return;
-  }
-  if (MAP == null) {
-   showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-   return;
-  }
+ // I really need to clean up this mess of a function at some point. Why did I just copy the entire function twice for sub-levels? I should add a seperate function for that. Later though, I need a nap. //
+ private void exportAsMODActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportAsMODActionPerformed
+  if (FARC == null) { showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this."); return; }
+  if (MAP == null) { showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this."); return; }
   
-  fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
-  fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-
-  fileChooser.setFileFilter(null);
-  int returnVal = fileChooser.showSaveDialog(this);
-
-  if (returnVal != JFileChooser.APPROVE_OPTION) {
-   System.out.println("File access cancelled by user.");
-   return;
-  }
-  String selectedDirectory = fileChooser.getSelectedFile().getAbsolutePath().toString() + "\\";
-
-  System.out.println(selectedDirectory);
+  
+  String selectedDirectory = fileDialogue.openDirectory();
+  if (selectedDirectory == null || selectedDirectory.isEmpty()) { System.out.println("File access cancelled by user."); return; }
   
   if (!currFileName[0].contains(".plan")) return;
   try {
-   byte[] bytesToRead = FarcUtils.pullFromFarc(currSHA1[0], FARC);
+   byte[] bytesToRead = FarUtils.pullFromFarc(currSHA1[0], FARC, false);
    ByteArrayInputStream fileAccess = new ByteArrayInputStream(bytesToRead);
    fileAccess.skip(8);
 
@@ -1707,8 +1340,6 @@ public class MainWindow extends javax.swing.JFrame {
    byte[] dependenciesCountByte = new byte[4];
    fileAccess.read(dependenciesCountByte);
    int dependenciesCount = Integer.parseInt(MiscUtils.byteArrayToHexString(dependenciesCountByte), 16);
-
-   System.out.println("Dependencies count: " + dependenciesCount);
 
    byte[] dependencyKindByte = new byte[1];
    byte[] dependencyGUIDByte = new byte[4];
@@ -1745,7 +1376,7 @@ public class MainWindow extends javax.swing.JFrame {
    rootElement.setAttributeNode(icon);
    rootElement.setAttributeNode(game);
 
-   byte[] buffer = FarcUtils.pullFromFarc(currSHA1[0], FARC);
+   byte[] buffer = FarUtils.pullFromFarc(currSHA1[0], FARC, false);
    File fileToPack = new File(selectedDirectory + nameOfNode.substring(0, nameOfNode.length() - 5) + "/files/" + nameOfNode);
    fileToPack.getParentFile().mkdirs();
    fileToPack.createNewFile();
@@ -1786,11 +1417,11 @@ public class MainWindow extends javax.swing.JFrame {
      String Hash = MiscUtils.getHashFromGUID(MiscUtils.byteArrayToHexString(dependencyGUIDByte), MAP);
      if ("NULL".equals(Hash))
       continue;
-     byte[] file = FarcUtils.pullFromFarc(Hash, FARC);
+     byte[] file = FarUtils.pullFromFarc(Hash, FARC, false);
      if (file == null)
       continue;
-     if (fileNameNew.contains(".gmat")) {
-      byte[] innerBytesToRead = FarcUtils.pullFromFarc(Hash, FARC);
+     if (fileNameNew.contains(".gmat") || fileNameNew.contains(".mol")) {
+      byte[] innerBytesToRead = FarUtils.pullFromFarc(Hash, FARC, false);
       ByteArrayInputStream innerFileAccess = new ByteArrayInputStream(innerBytesToRead);
       innerFileAccess.skip(8);
 
@@ -1824,10 +1455,9 @@ public class MainWindow extends javax.swing.JFrame {
         String innerHash = MiscUtils.getHashFromGUID(MiscUtils.byteArrayToHexString(innerDependencyGUIDByte), MAP);
         if ("NULL".equals(innerHash))
          continue;
-        byte[] innerFile = FarcUtils.pullFromFarc(innerHash, FARC);
+        byte[] innerFile = FarUtils.pullFromFarc(innerHash, FARC, false);
         if (innerFile == null)
          continue;
-        System.out.println(innerFileNameNew);
         String innerOutputFileName = selectedDirectory + currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1);
         innerOutputFileName = innerOutputFileName.substring(0, innerOutputFileName.length() - 5) + "/files/" + innerFileNameNew.substring(innerFileNameNew.lastIndexOf("/") + 1);
 
@@ -1840,7 +1470,7 @@ public class MainWindow extends javax.swing.JFrame {
          }
         } else {
          innerOutputFileName = innerOutputFileName.substring(0, innerOutputFileName.length() - 3) + "png";
-         ImageIO.write(MiscUtils.DDStoPNG(ZlibUtils.decompressThis(innerFile)), "png", new File(innerOutputFileName));
+         ImageIO.write(MiscUtils.DDStoPNG(ZlibUtils.decompressThis(innerFile, false)), "png", new File(innerOutputFileName));
         }
 
         fileNode = doc.createElement("file");
@@ -1868,8 +1498,6 @@ public class MainWindow extends javax.swing.JFrame {
       }
 
      }
-
-     System.out.println(fileNameNew);
      String outputFileName = selectedDirectory + currFileName[0].substring(currFileName[0].lastIndexOf("/") + 1);
      outputFileName = outputFileName.substring(0, outputFileName.length() - 5) + "/files/" + fileNameNew.substring(fileNameNew.lastIndexOf("/") + 1);
 
@@ -1882,7 +1510,7 @@ public class MainWindow extends javax.swing.JFrame {
       }
      } else {
       outputFileName = outputFileName.substring(0, outputFileName.length() - 3) + "png";
-      ImageIO.write(MiscUtils.DDStoPNG(ZlibUtils.decompressThis(file)), "png", new File(outputFileName));
+      ImageIO.write(MiscUtils.DDStoPNG(ZlibUtils.decompressThis(file, false)), "png", new File(outputFileName));
      }
 
      fileNode = doc.createElement("file");
@@ -1929,81 +1557,41 @@ public class MainWindow extends javax.swing.JFrame {
    Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
   }
 
- }//GEN-LAST:event_PackagePLANActionPerformed
+ }//GEN-LAST:event_exportAsMODActionPerformed
 
- private void MAPtoRLSTActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MAPtoRLSTActionPerformed
-  if (MAP == null) {
-   showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this.");
-   return;
-  }
+ private void exportAsRLSTActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportAsRLSTActionPerformed
+  if (MAP == null) { showUserDialog("A bit of advice", "You kind of need a .MAP file opened to do anything with this."); return; }
   String output = "";
-  try {
-   try (
-    // Open the selected file. // 
-    DataInputStream mapAccess = new DataInputStream(new FileInputStream(MAP))) {
-
-    // Initialize Variables // 
-    long begin = System.currentTimeMillis();
-    boolean lbp3map = false;
-
-    // Detect from which game the .MAP originates. //
-    int header = mapAccess.readInt();
-    switch (header) {
-     case 256:
-      break;
-     case 21496064:
-      lbp3map = true;
-      break;
-     case 936:
-      break;
-     default:
-      throw new IOException("Error reading 4 bytes - not a valid .map file");
-    }
-
-    // Get the amount of entries present in the .MAP File //
+  try (DataInputStream mapAccess = new DataInputStream(new FileInputStream(MAP))) { 
+    boolean lbp3map = MapUtils.isLBP3Map(mapAccess.readInt(), false);
     int mapEntries = mapAccess.readInt();
-
-    // Enumerate each entry detected. //
+    
     int fileNameLength = 0;
     String fileName = "";
     for (int i = 0; i < mapEntries; i++) {
-
-     // Seek 2 bytes if the .MAP originates from LBP1/2. //
      if (!lbp3map)
       mapAccess.skip(2);
 
-     // Get path of entry //
      fileNameLength = mapAccess.readShort();
      byte[] fileNameBytes = new byte[fileNameLength];
      mapAccess.read(fileNameBytes);
      fileName = new String(fileNameBytes);
 
-     if (fileName.contains(".plan") || fileName.contains(".plan") || fileName.contains(".pal") || fileName.contains(".oft") || fileName.contains(".ads") || fileName.contains(".adc") || fileName.contains(".qst"))
-      output += fileName + "\n";
+     if (fileName.contains(".plan") || fileName.contains(".pal"))
+            output += fileName + "\n";   
 
-     // Seek 4 bytes if the .MAP originates from LBP1/2. (Padding) //
      if (!lbp3map)
       mapAccess.skip(4);
-
-     // Skip the rest of the data as it's obtained at a future point in time. //
+     
      mapAccess.skip(32);
-
-
     }
-    PrintWriter out = new PrintWriter("inventory.rlst");
-    out.println(output);
-    out.close();
-    System.out.println("Success!");
-
-   }
-
+    PrintWriter out = new PrintWriter("inventory.rlst"); out.println(output); out.close();
+    System.out.println("Successfully created RLST from MAP.");
   } catch (FileNotFoundException ex) {} catch (IOException ex) {}
-
- }//GEN-LAST:event_MAPtoRLSTActionPerformed
+ }//GEN-LAST:event_exportAsRLSTActionPerformed
 
  private void OutputTextAreaMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_OutputTextAreaMouseReleased
-  if (evt.isPopupTrigger())
-   ConsolePopup.show(OutputTextArea, evt.getX(), evt.getY());
+  if (evt.isPopupTrigger()) ConsolePopup.show(OutputTextArea, evt.getX(), evt.getY());
  }//GEN-LAST:event_OutputTextAreaMouseReleased
 
  private void ClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClearActionPerformed
@@ -2011,223 +1599,53 @@ public class MainWindow extends javax.swing.JFrame {
   OutputTextArea.replaceSelection("");
  }//GEN-LAST:event_ClearActionPerformed
 
- private void OpenFAR4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenFAR4ActionPerformed
-  showUserDialog("Warning", "The ability to open FAR4 files is very much in development, everything except extracting will be disabled.");
-  fileChooser.setFileFilter(null);
-  fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
-  fileChooser.setAcceptAllFileFilterUsed(true);
-  int returnVal = fileChooser.showOpenDialog(this);
-  if (returnVal == JFileChooser.APPROVE_OPTION) {
-   try {
-    FAR4 = fileChooser.getSelectedFile();
-    System.out.println("Sucessfully opened " + FAR4.getName());
-    try (RandomAccessFile FAR4Access = new RandomAccessFile(FAR4, "rw")) {
-     FAR4Access.seek(FAR4Access.length() - 8);
-     int Entries = FAR4Access.readInt();
-     long TableOffset = (FAR4Access.length() - 28) - (Entries * 28);
-     FAR4Access.seek(TableOffset);
+ private void openFAR4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openFAR4ActionPerformed
+  showUserDialog("Warning", "Editing your save file may be dangerous, be sure to keep a backup.");
+  if (IPReSHA1 != null) { System.out.println("Replacement of files in littlefart files is currently not functional due to the encryption of the IPRe."); return; }
+  File newFAR4 = fileDialogue.openFile("", "", "", false);
+  if (newFAR4 == null) { System.out.println("File access cancelled by user."); return; }
+  else FAR4 = newFAR4;
+  FarUtils.openFAR4(this);
+ }//GEN-LAST:event_openFAR4ActionPerformed
 
-     long PreviousOffset = TableOffset;
-     DefaultMutableTreeNode root = new DefaultMutableTreeNode(FAR4.getName());
-     DefaultTreeModel model = new DefaultTreeModel((DefaultMutableTreeNode) root);
-
-     FAR4Size = new String[Entries];
-     FAR4SHA1 = new String[Entries];
-
-     for (int i = 0; i < Entries; i++) {
-      String fileHash = "";
-      for (int j = 0; j < 20; j++) {
-       fileHash += String.format("%02X", FAR4Access.readByte());
-       PreviousOffset += 1;
-       FAR4Access.seek(PreviousOffset);
-      }
-
-      FAR4SHA1[i] = fileHash;
-
-
-      int Offset;
-
-      Offset = FAR4Access.readInt();
-      PreviousOffset += 4;
-      FAR4Access.seek(Offset);
-
-      byte[] Magic = new byte[4];
-      FAR4Access.read(Magic);
-      String Extension = new String(Magic, "UTF-8").toLowerCase();
-      if (Arrays.equals(MiscUtils.hexStringToByteArray("FFD8FFE0"), Magic))
-       Extension = "jpg";
-      else if (Extension.contains("png"))
-       Extension = "png";
-
-      FAR4Access.seek(PreviousOffset);
-
-      String fileSize = "";
-      for (int j = 0; j < 4; j++) {
-       fileSize += String.format("%02X", FAR4Access.readByte());
-       PreviousOffset += 1;
-       FAR4Access.seek(PreviousOffset);
-      }
-
-      if (Extension.contains("bprb")) {
-       this.BPRbLength = Integer.parseInt(fileSize, 16);
-       this.BPRbOffset = Offset;
-       this.BPRbSHA1 = fileHash;
-      }
-
-      FAR4Size[i] = fileSize;
-
-      MiscUtils.buildTreeFromString(model, Integer.toHexString(Offset) + "." + Extension);
-     }
-
-     this.mapTree.setModel(model);
-     this.mapTree.updateUI();
-
-     MAP = null;
-     FARC = null;
-     disableFARCMenus();
-    }
-
-   } catch (FileNotFoundException ex) {
-    Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-   } catch (IOException ex) {
-    Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-   }
-
-
-  }
- }//GEN-LAST:event_OpenFAR4ActionPerformed
-
- private void ReplaceDecompressedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ReplaceDecompressedActionPerformed
-  if (FARC == null) {
-   showUserDialog("A bit of advice", "You kind of need a .FARC file opened to do anything with this.");
-   return;
-  }
-
-  if (currSHA1.length != 1) {
-   showUserDialog("Warning", "This function can only be used with one file at a time to prevent errors.");
-   return;
-  }
-
-  fileChooser.setCurrentDirectory(new java.io.File(System.getProperty("user.home") + "/Desktop"));
-  fileChooser.setFileFilter(null);
-  fileChooser.setFileFilter(fileChooser.getAcceptAllFileFilter());
-  int returnVal = fileChooser.showOpenDialog(this);
-
-  if (returnVal == JFileChooser.APPROVE_OPTION) {
-   try {
-    File newFile = fileChooser.getSelectedFile();
-    FileInputStream Stream = new FileInputStream(newFile);
-    byte[] fileToCompress = Stream.readAllBytes();
-    Stream.close();
-    System.out.println("Sucessfully opened " + newFile.getName());
-    System.out.println("Attempting to inject " + newFile.getName() + " into " + FARC.getName());
-    File workingFile = new File("temp");
-    switch (MiscUtils.getHeaderHexString(workingFile)) {
-     case "504C4E62":
-     case "414E4D62":
-     case "42455662":
-     case "4C564C62":
-     case "434C4462":
-     case "46534862":
-     case "474D5462":
-     case "4F415462":
-     case "4D534862":
-     case "534C5462":
-     case "50414C62":
-     case "50434B62":
-      System.out.println("Format: Custom Compression Full");
-      break;
-     default:
-      System.out.println("Not implemented | Not a valid file type");
-      return;
-    }
-    
-    int CHUNK_SIZE = 32768;
-    
-    int numberOfChunks = ((int) Math.ceil((fileToCompress.length / CHUNK_SIZE))) + 1;
-    
-    int[] compressedSize = new int[numberOfChunks];
-    int[] uncompressedSize = new int[numberOfChunks];
-    ArrayList compressedData = new ArrayList<byte[]>();
-    List<byte[]> uncompressedData = MiscUtils.divideArray(fileToCompress, CHUNK_SIZE);
-    for (int i = 0; i < numberOfChunks; i++)
+ private void replaceDecompressedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_replaceDecompressedActionPerformed
+  if (FARC == null && FAR4 == null) { showUserDialog("A bit of advice", "You kind of need a FAR file opened to do anything with this."); return; }
+  if (IPReSHA1 != null) { System.out.println("Replacement of files in littlefart files is currently not functional due to the encryption of the IPRe."); return; }
+  if (currSHA1.length != 1) { showUserDialog("Warning", "This function can only be used with one file at a time to prevent errors."); return; }
+  File file = fileDialogue.openFile("", "", "", false);
+  if (file == null) { System.out.println("File access cancelled by user."); return; }
+  try {
+    byte[] data = ZlibUtils.compressFile(new File("temp"), file, false);
+    if (FARC != null)
     {
-        Deflater deflater = new Deflater();
-        uncompressedSize[i] = uncompressedData.get(i).length;
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(uncompressedData.get(i).length);
-        deflater.setInput(uncompressedData.get(i));
-        deflater.finish();
-        byte[] chunk = new byte[1024];
-        while (!deflater.finished()) {
-            int count = deflater.deflate(chunk);
-            outputStream.write(chunk, 0, count);
-        }
-        outputStream.close();
-        compressedData.add(outputStream.toByteArray());
-        compressedSize[i] = outputStream.size();
+        File[] selectedFARCs = getSelectedFARCs();
+        if (selectedFARCs == null) { System.out.println("File access cancelled by user."); return; }
+        FarUtils.addFile(data, selectedFARCs);
+        MiscUtils.replaceEntryByGUID(currGUID[0], currFileName[0], Integer.toHexString((int) data.length), MiscUtils.byteArrayToHexString(MiscUtils.getSHA1(data)), this);   
     }
-         
-    int seek = 8;
-    FileInputStream fis = new FileInputStream("temp");
-    FileOutputStream fos = new FileOutputStream("tempc");
-    fos.write(fis.readAllBytes());
-    fis.close();
-    fos.close();
-
-    RandomAccessFile fileAccess = new RandomAccessFile("tempc", "rw");
-    //Skip header
-
-    seek = 8;
-    fileAccess.seek(seek);
-    int dependencyOffset = fileAccess.readInt();
-
-    fileAccess.seek(dependencyOffset);
-    byte[] dependencies = new byte[(int)(fileAccess.length() - dependencyOffset)];
-    fileAccess.read(dependencies);
-
-    seek = 12;
-    fileAccess.seek(seek);
-
-    short type = fileAccess.readShort();
-
-    if (type == 256) seek += 3;
-    else seek += 8;
-
-    fileAccess.seek(seek);
-    fileAccess.writeShort(numberOfChunks);
-    for (int i = 0; i < uncompressedSize.length; i++) {
-        fileAccess.writeShort(compressedSize[i]);
-        fileAccess.writeShort(uncompressedSize[i]);
+    else 
+    {
+        FarUtils.rebuildFAR4(this, currSHA1[0], data);
     }
-    for (int i = 0; i < numberOfChunks; i++) fileAccess.write((byte[]) compressedData.get(i));
-    dependencyOffset = (int) fileAccess.getFilePointer();
-    fileAccess.write(dependencies);
-
-    fileAccess.seek(8);
-    fileAccess.writeInt(dependencyOffset);
-    fileAccess.close();
-
-    File tempc = new File("tempc");
-    FarcUtils.addFile(tempc, FARC);
-    MiscUtils.replaceEntryByGUID(currGUID[0], currFileName[0], Integer.toHexString((int) tempc.length()), MiscUtils.byteArrayToHexString(MiscUtils.getSHA1(tempc)), this);
 
    } catch (Exception ex) {
     Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
    }
-   ((DefaultTreeModel) mapTree.getModel()).reload((DefaultMutableTreeNode) mapTree.getModel().getRoot());
-   mapTree.updateUI();
-  }
- }//GEN-LAST:event_ReplaceDecompressedActionPerformed
+   if (FAR4 == null)
+   {
+      ((DefaultTreeModel) mapTree.getModel()).reload((DefaultMutableTreeNode) mapTree.getModel().getRoot());
+      mapTree.updateUI();   
+   }
+   else FarUtils.openFAR4(this);
+   System.out.println("Files have succesfully been replaced.");
+ }//GEN-LAST:event_replaceDecompressedActionPerformed
 
-    private void darkModeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_darkModeActionPerformed
-       if (darkMode.isSelected()) 
+    private void toggleDarculaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_toggleDarculaActionPerformed
+       if (toggleDarcula.isSelected()) 
        {
             BasicLookAndFeel darcula = new DarculaLaf();
-            try {
-                UIManager.setLookAndFeel(darcula);
-            } catch (UnsupportedLookAndFeelException ex) {
-                Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            try { UIManager.setLookAndFeel(darcula); } 
+            catch (UnsupportedLookAndFeelException ex) { Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex); }
        }
        else 
        {
@@ -2244,22 +1662,21 @@ public class MainWindow extends javax.swing.JFrame {
            }
        }
        SwingUtilities.updateComponentTreeUI(this);
-       SwingUtilities.updateComponentTreeUI(fileChooser);
-    }//GEN-LAST:event_darkModeActionPerformed
+       SwingUtilities.updateComponentTreeUI(fileDialogue.fileDialogue);
+    }//GEN-LAST:event_toggleDarculaActionPerformed
 
  public void disableFARCMenus() {
-  AddFileToFARC.setEnabled(false);
   ReplaceSelectedOptions.setEnabled(true);
-  ReplaceSelected.setEnabled(true);
-  ReplaceDecompressed.setEnabled(false);
-  AddEntry.setEnabled(false);
-  RemoveEntry.setEnabled(false);
-  ZeroEntry.setEnabled(false);
-  MAPtoRLST.setEnabled(false);
+  addFileToFARC.setEnabled(false);
+  ReplaceSelectedOptions.setEnabled(true);
+  addEntry.setEnabled(false);
+  removeEntry.setEnabled(false);
+  zeroEntry.setEnabled(false);
+  exportAsRLST.setEnabled(false);
   ExportMAPOptions.setEnabled(false);
-  InstallMod.setEnabled(false);
+  installMod.setEnabled(false);
   PLANExportOptions.setEnabled(false);
-  PrintDependenciesButton.setEnabled(false);
+  printDependencies.setEnabled(false);
   ExportTEXOptions.setEnabled(true);
 
   FileExportMenu.setEnabled(true);
@@ -2267,7 +1684,7 @@ public class MainWindow extends javax.swing.JFrame {
  }
 
  public void enableFARCMenus() {
-  AddFileToFARC.setEnabled(true);
+  addFileToFARC.setEnabled(true);
   if (MAP != null)
    enableSharedMenus();
   else {
@@ -2280,10 +1697,10 @@ public class MainWindow extends javax.swing.JFrame {
 
  public void enableMAPMenus() {
   FileExportMenu.setEnabled(true);
-  AddEntry.setEnabled(true);
-  RemoveEntry.setEnabled(true);
-  ZeroEntry.setEnabled(true);
-  MAPtoRLST.setEnabled(true);
+  addEntry.setEnabled(true);
+  removeEntry.setEnabled(true);
+  zeroEntry.setEnabled(true);
+  exportAsRLST.setEnabled(true);
   ExportMAPOptions.setEnabled(true);
   if (FARC != null)
    enableSharedMenus();
@@ -2297,10 +1714,8 @@ public class MainWindow extends javax.swing.JFrame {
  public void enableSharedMenus() {
   ExportTEXOptions.setEnabled(true);
   ReplaceSelectedOptions.setEnabled(true);
-  ReplaceSelected.setEnabled(true);
-  ReplaceDecompressed.setEnabled(true);
-  PrintDependenciesButton.setEnabled(true);
-  InstallMod.setEnabled(true);
+  printDependencies.setEnabled(true);
+  installMod.setEnabled(true);
   PLANExportOptions.setEnabled(true);
   FileExportMenu.setEnabled(true);
   ExtractionOptions.setEnabled(true);
@@ -2314,14 +1729,7 @@ public class MainWindow extends javax.swing.JFrame {
   }
  }
 
-
-
  public static void main(String args[]) {
-  //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-  /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-   * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-   */
-
   java.awt.EventQueue.invokeLater(() -> {
    BasicLookAndFeel darcula = new DarculaLaf();
    try {
@@ -2331,66 +1739,44 @@ public class MainWindow extends javax.swing.JFrame {
    }
    MainWindow myWindow = new MainWindow();
    myWindow.setVisible(true);
-
-   if (args.length != 0) {
-    if (args[0].equals("--dev")) {
-     System.out.println("FARC Tool has been started in Developer Mode, this is intended for testing purposes only.");
-     myWindow.setTitle("FARC Tool 2 | Developer");
-     myWindow.developerMode = true;
-     myWindow.DEV.setVisible(true);
-    }
-   }
-
   });
  }
-
+ 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JMenuItem AddEntry;
-    private javax.swing.JMenuItem AddFileToFARC;
     private javax.swing.JMenuItem Clear;
     private javax.swing.JPopupMenu ConsolePopup;
-    private javax.swing.JMenu DEV;
     private javax.swing.JTable EditorPanel;
-    private javax.swing.JMenuItem Exit;
     private javax.swing.JMenu ExportMAPOptions;
     private javax.swing.JMenu ExportTEXOptions;
-    private javax.swing.JMenuItem ExportTEXtoDDS;
-    private javax.swing.JMenuItem ExportTEXtoJPG;
-    private javax.swing.JMenuItem ExportTEXtoPNG;
-    private javax.swing.JMenuItem ExtractDecompressed;
-    private javax.swing.JMenuItem ExtractRaw;
     private javax.swing.JMenu ExtractionOptions;
     private javax.swing.JMenu FileExportMenu;
     private javax.swing.JMenu FileMenu;
     private javax.swing.JMenu HelpMenu;
-    private javax.swing.JMenuItem InstallMod;
-    private javax.swing.JMenuItem MAPtoRLST;
     private javax.swing.JScrollPane MapPanel;
-    private javax.swing.JMenuItem OpenFAR4;
-    private javax.swing.JMenuItem OpenFARC;
-    private javax.swing.JMenuItem OpenMAP;
     private javax.swing.JTextArea OutputTextArea;
     private javax.swing.JMenu PLANExportOptions;
-    private javax.swing.JMenuItem PackagePLAN;
     private javax.swing.JOptionPane PopUpMessage;
     private javax.swing.JLabel PreviewLabel;
     private javax.swing.JPanel PreviewPanel;
-    private javax.swing.JMenuItem PrintDependenciesButton;
-    private javax.swing.JMenuItem RemoveEntry;
-    private javax.swing.JMenuItem ReplaceDecompressed;
-    private javax.swing.JMenuItem ReplaceSelected;
     private javax.swing.JMenu ReplaceSelectedOptions;
-    private javax.swing.JMenuItem ReverseBytes;
     private javax.swing.JSplitPane RightHandStuff;
     private javax.swing.JScrollPane TextPrevScroll;
     private javax.swing.JTextArea TextPreview;
     private javax.swing.JPanel ToolsPanel;
     private javax.swing.JPanel ToolsPanel2;
-    private javax.swing.JMenuItem ZeroEntry;
     private javax.swing.JFrame aboutWindow;
-    private javax.swing.JCheckBoxMenuItem darkMode;
-    public javax.swing.JFileChooser fileChooser;
+    private javax.swing.JMenuItem addEntry;
+    private javax.swing.JMenuItem addFileToFARC;
+    private javax.swing.JMenuItem closeApplication;
+    private javax.swing.JMenuItem exportAsDDS;
+    private javax.swing.JMenuItem exportAsJPG;
+    private javax.swing.JMenuItem exportAsMOD;
+    private javax.swing.JMenuItem exportAsPNG;
+    private javax.swing.JMenuItem exportAsRLST;
+    private javax.swing.JMenuItem extractDecompressed;
+    private javax.swing.JMenuItem extractRaw;
     private tv.porst.jhexview.JHexView hexViewer;
+    private javax.swing.JMenuItem installMod;
     private javax.swing.JFrame jFrame1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
@@ -2401,7 +1787,6 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu6;
     private javax.swing.JMenu jMenu7;
     private javax.swing.JMenuBar jMenuBar1;
-    private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
@@ -2415,6 +1800,17 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JTextArea jTextArea2;
     private javax.swing.JProgressBar mapLoadingBar;
     public javax.swing.JTree mapTree;
+    private javax.swing.JMenuItem openAboutFrame;
+    private javax.swing.JMenuItem openFAR4;
+    private javax.swing.JMenuItem openFARC;
+    private javax.swing.JMenuItem openMAP;
     private javax.swing.JPanel pnlOutput;
+    private javax.swing.JMenuItem printDependencies;
+    private javax.swing.JMenuItem removeEntry;
+    private javax.swing.JMenuItem replaceDecompressed;
+    private javax.swing.JMenuItem replaceRaw;
+    private javax.swing.JMenuItem reverseBytes;
+    private javax.swing.JCheckBoxMenuItem toggleDarcula;
+    private javax.swing.JMenuItem zeroEntry;
     // End of variables declaration//GEN-END:variables
 }
