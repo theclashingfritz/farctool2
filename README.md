@@ -1,3 +1,5 @@
+Original Git Repo was https://github.com/ennuo/farctool2.git/
+
 # About
 ### What is farctool2?
 farctool2 is a program I wrote for two reasons:
